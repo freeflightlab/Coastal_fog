@@ -1,0 +1,1685 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ridge lift on a foggy sea cliff: lapse rates, humidity, fog, sun and density altitude, in real units with published benchmarks.">
+<title>Sea Cliff Lift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&amp;family=Barlow:ital,wght@0,400;0,500;0,600;1,400&amp;family=Newsreader:ital,opsz,wght@1,6..72,400..600&amp;display=swap">
+<style>
+:root{color-scheme:light}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: nautical-chart paper. Conditions panel, then the lift budget (hero),
+   lapse-rate chart, fog, sun and heat transfer, how the wind feels, the air-density
+   reference, and benchmarks with references. Stacks to one column on phones. */
+:root{
+  --paper:#F1F5F7;
+  --panel:#FFFFFF;
+  --ink:#0F1E2A;
+  --ink-2:#43566A;
+  --ink-3:#5F6F7D;
+  --rule:#D3DDE4;
+  --grid:#E2E9EE;
+  --chip:#E7EFF5;
+  --signal:#D4442A;
+  --focus:#256abf;
+  --link:#1F5FAE;
+  /* lift and sink (diverging, validated) */
+  --up:#1F8A70; --down:#C4661C;
+  --up-wash:rgba(31,138,112,.15); --down-wash:rgba(196,102,28,.15);
+  /* humidity, 0% → 100% (ordinal, validated) */
+  --h0:#6da7ec; --h1:#3987e5; --h2:#256abf; --h3:#184f95; --h4:#0d366b;
+  --wash:rgba(37,106,191,.09);
+  /* density, soft → punchy */
+  --den-lo:#DCE2EB; --den-hi:#33405C;
+  --den-wash:rgba(51,64,92,.10); --den-edge:#8E9AB1;
+  --cell-lo:#F5F7FA; --cell-hi:#8E9AB1;
+  --lift:0 1px 2px rgba(15,30,42,.05), 0 12px 32px -20px rgba(15,30,42,.28);
+  --display:"Newsreader","Iowan Old Style",Georgia,serif;
+  --body:"Barlow","Helvetica Neue",Arial,sans-serif;
+  --data:"Barlow Semi Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B141B; --panel:#111D26; --ink:#E4EDF2; --ink-2:#A9B8C4; --ink-3:#8496A4;
+    --rule:#253541; --grid:#17242E; --chip:#182A39;
+    --signal:#FF7052; --focus:#6da7ec; --link:#8DBDF2;
+    --up:#2A9C80; --down:#D96F28;
+    --up-wash:rgba(42,156,128,.20); --down-wash:rgba(217,111,40,.20);
+    --h0:#184f95; --h1:#256abf; --h2:#3987e5; --h3:#6da7ec; --h4:#9ec5f4;
+    --wash:rgba(109,167,236,.10);
+    --den-lo:#1C2834; --den-hi:#BAC6DA;
+    --den-wash:rgba(186,198,218,.10); --den-edge:#5A6C88;
+    --cell-lo:#131E28; --cell-hi:#4A5B74;
+    --lift:none;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B141B; --panel:#111D26; --ink:#E4EDF2; --ink-2:#A9B8C4; --ink-3:#8496A4;
+  --rule:#253541; --grid:#17242E; --chip:#182A39;
+  --signal:#FF7052; --focus:#6da7ec; --link:#8DBDF2;
+  --up:#2A9C80; --down:#D96F28;
+  --up-wash:rgba(42,156,128,.20); --down-wash:rgba(217,111,40,.20);
+  --h0:#184f95; --h1:#256abf; --h2:#3987e5; --h3:#6da7ec; --h4:#9ec5f4;
+  --wash:rgba(109,167,236,.10);
+  --den-lo:#1C2834; --den-hi:#BAC6DA;
+  --den-wash:rgba(186,198,218,.10); --den-edge:#5A6C88;
+  --cell-lo:#131E28; --cell-hi:#4A5B74;
+  --lift:none;
+  color-scheme:dark;
+}
+
+body{background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:32px 64px;display:grid;gap:56px}
+button,input{font:inherit;color:inherit}
+button:focus-visible,input[type=checkbox]:focus-visible,a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--link);text-underline-offset:2px}
+strong{font-weight:600}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* type */
+.mast{display:grid;gap:12px;max-width:800px}
+.eyebrow{margin:0;font:500 13px/1.2 var(--data);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+h1{margin:0;font:italic 500 clamp(2.5rem, 6.4vw, 3.9rem)/1 var(--display);letter-spacing:-.015em;text-wrap:balance}
+.lede{margin:0;font-size:1.1rem;color:var(--ink-2);max-width:62ch}
+h2{margin:0;font:italic 500 1.65rem/1.15 var(--display);letter-spacing:-.005em;text-wrap:balance}
+h3{margin:0;font:italic 500 1.3rem/1.2 var(--display);text-wrap:balance}
+.sec{display:grid;gap:22px}
+.sec-head{display:grid;gap:8px;max-width:800px}
+.sub{margin:0;color:var(--ink-2);font-size:15.5px;max-width:68ch}
+.ref{font:500 .78em/1 var(--data);color:var(--ink-3);text-decoration:none;vertical-align:super;margin-left:1px}
+.ref:hover{color:var(--link)}
+.note{margin:0;font-size:13.5px;color:var(--ink-3)}
+.panel-label{margin:0;font:600 12px/1 var(--data);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+
+/* conditions */
+.inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--panel);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--lift)}
+.group{padding:20px 22px 22px;display:grid;gap:18px;align-content:start;min-width:0}
+.group+.group{border-left:1px solid var(--rule)}
+.inputs .presets{grid-column:1/-1;border-top:1px solid var(--rule);padding:16px 22px 18px}
+.ctl{display:grid;gap:2px}
+.ctl-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.ctl-head label{font-weight:500;font-size:15px}
+.ctl-head output{font:600 24px/1 var(--data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctl-help{margin:0;font:400 13.5px/1.35 var(--data);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ctl.off{opacity:.45}
+.toggle{display:flex;align-items:center;gap:8px;font-weight:500;font-size:15px;cursor:pointer}
+.toggle input{width:18px;height:18px;margin:0;accent-color:var(--ink)}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;margin:0;background:transparent;cursor:pointer;--pct:50%;--fill:var(--ink-2)}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right, var(--fill) 0 var(--pct), var(--rule) var(--pct) 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;margin-top:-8px;border-radius:50%;background:var(--panel);border:2px solid var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--rule)}
+input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--fill)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--panel);border:2px solid var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input[type=range]:focus{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 40%, transparent)}
+input[type=range]:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px color-mix(in srgb, var(--focus) 40%, transparent)}
+input[type=range]:disabled{cursor:not-allowed}
+#rh,#lwc{--fill:var(--h2)}
+
+.presets{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.presets .panel-label{margin-right:6px}
+.chip{font:500 14.5px/1.15 var(--data);letter-spacing:.01em;background:var(--panel);border:1px solid var(--rule);border-radius:999px;padding:8px 13px;cursor:pointer;text-align:left}
+.chip:hover{background:var(--chip)}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--chip)}
+
+/* lift budget */
+.budget{display:grid;gap:20px;padding:22px 24px 24px;background:var(--panel);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--lift)}
+.budget-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.budget-head .sec-head{max-width:560px}
+.net{display:grid;justify-items:end;gap:2px}
+.net-row{display:flex;align-items:baseline;gap:8px}
+.net-num{font:600 64px/1 var(--data);letter-spacing:-.01em}
+.net-unit{font:500 20px/1 var(--data);color:var(--ink-3)}
+.net-fpm{margin:0;font:600 20px/1.2 var(--data);color:var(--ink-2)}
+.wf{display:grid;gap:4px}
+.wf-row{display:grid;grid-template-columns:minmax(0,15.5em) minmax(0,1fr) 8.5em;align-items:center;gap:6px 14px;padding:5px 0}
+.wf-label{font-size:15px;line-height:1.3;color:var(--ink)}
+.wf-label small{display:block;font-size:13px;color:var(--ink-3)}
+.wf-track{position:relative;height:24px}
+.wf-zero{position:absolute;top:-6px;bottom:-6px;width:1px;background:var(--ink-3);opacity:.6}
+.wf-bar{position:absolute;top:4px;height:16px;border-radius:3px;min-width:2px}
+.wf-bar.up{background:var(--up)}
+.wf-bar.down{background:var(--down)}
+.wf-bar.net{background:var(--ink)}
+.wf-bar.th{background:var(--up-wash);box-shadow:inset 0 0 0 1.5px var(--up)}
+.wf-val{font:600 16px/1.2 var(--data);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wf-val small{display:block;font-size:13px;font-weight:500;color:var(--ink-3)}
+.wf-row.total{border-top:1px solid var(--rule);margin-top:4px;padding-top:10px}
+.wf-row.total .wf-label{font-weight:600}
+.wf-row.extra .wf-label,.wf-row.extra .wf-val{color:var(--ink-2)}
+.facts4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 18px;margin:0;padding-top:6px;border-top:1px solid var(--rule)}
+.fact{display:grid;gap:4px;align-content:start;padding-top:12px;min-width:0}
+.fact dt{font:600 12px/1.25 var(--data);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.fact dd{margin:0;font:600 22px/1.15 var(--data)}
+.fact p{margin:0;font-size:13.5px;line-height:1.4;color:var(--ink-2)}
+.fact dd small{display:block;font-size:13px;font-weight:500;color:var(--ink-3)}
+.copy-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.ghost{font:600 14px/1 var(--data);letter-spacing:.03em;background:transparent;border:1px solid var(--rule);border-radius:8px;padding:9px 13px;cursor:pointer}
+.ghost:hover{background:var(--chip)}
+.copy-fallback{margin:0;padding:8px 10px;border:1px dashed var(--rule);border-radius:6px;font-size:14px;color:var(--ink-2);user-select:all}
+
+/* two-column bodies */
+.two{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);gap:40px;align-items:start}
+.two.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.side{display:grid;gap:12px;align-content:start;min-width:0}
+.side p{margin:0;color:var(--ink-2);font-size:15.5px}
+.side strong{color:var(--ink)}
+.card{display:grid;gap:14px;align-content:start;min-width:0;padding:18px 20px 20px;background:var(--panel);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--lift)}
+.mini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:0}
+.mini div{display:grid;gap:3px;align-content:start;min-width:0}
+.mini dt{font:600 12px/1.25 var(--data);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.mini dd{margin:0;font:600 21px/1.15 var(--data);font-variant-numeric:tabular-nums}
+.mini dd small{display:block;font-size:13px;font-weight:500;color:var(--ink-3);letter-spacing:0}
+
+/* plain tables */
+.table-scroll{overflow-x:auto}
+table.pt{width:100%;border-collapse:collapse;font:500 15px/1.25 var(--data);font-variant-numeric:tabular-nums}
+.pt th,.pt td{padding:8px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+.pt thead th{font-weight:600;font-size:13px;line-height:1.25;color:var(--ink-3);letter-spacing:.03em;border-bottom:1px solid var(--rule);vertical-align:bottom;white-space:normal}
+.pt tbody th,.pt thead th:first-child,.dt thead th:first-child{text-align:left;font-weight:600;color:var(--ink-2)}
+.pt tbody th{white-space:normal}
+.pt td{color:var(--ink-2)}
+.pt td.you{color:var(--ink);font-weight:600}
+.ba th{min-width:7.5em}
+.ba td small{display:block;margin-top:2px;font-size:12.5px;font-weight:500;color:var(--ink-3)}
+
+/* fog */
+.fog-ctl{display:grid;gap:14px;align-content:start;min-width:0}
+.energy{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}
+.energy div{display:grid;gap:4px;align-content:start;min-width:0}
+.energy dt{font:600 12px/1.25 var(--data);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.energy dd{margin:0;font:600 21px/1.1 var(--data);font-variant-numeric:tabular-nums}
+.energy dd small{display:block;font-size:13px;font-weight:500;color:var(--ink-3)}
+
+/* dial */
+.dial{display:block;width:100%;max-width:330px;height:auto;margin:0 auto;overflow:visible}
+.dial .track{fill:none;stroke-width:16}
+.dial .axis{fill:none;stroke:var(--rule);stroke-width:1}
+.dial .tk{stroke:var(--ink-3);stroke-width:1}
+.dial .tk.major{stroke:var(--ink-2);stroke-width:1.6}
+.dial text{font:500 12.5px var(--data);fill:var(--ink-3)}
+.dial .end{font:600 11.5px var(--data);letter-spacing:.16em;fill:var(--ink-2)}
+.dial .std{stroke:var(--ink);stroke-width:2}
+.dial .std-halo{stroke:var(--panel);stroke-width:5}
+.dial .std-mark{fill:var(--ink)}
+.dial .std-label{font:500 11.5px var(--data);fill:var(--ink-2)}
+.needle{transform-box:view-box;transform-origin:160px 156px;transition:transform .35s cubic-bezier(.25,.8,.3,1)}
+.needle line{stroke:var(--signal);stroke-width:3;stroke-linecap:round}
+.needle circle{fill:var(--signal);stroke:var(--panel);stroke-width:3}
+@media (prefers-reduced-motion: reduce){.needle{transition:none}}
+.hero{display:flex;align-items:baseline;justify-content:center;gap:8px}
+.hero-num{font:600 58px/1 var(--data);letter-spacing:-.01em}
+.hero-unit{font:500 20px/1 var(--data);color:var(--ink-3)}
+.vs{margin:0;text-align:center;font:600 18px/1.3 var(--data)}
+.center{text-align:center}
+
+/* momentum chain */
+.chain{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--panel);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--lift)}
+.chain li{position:relative;display:grid;gap:4px;align-content:start;padding:18px 22px 20px;min-width:0}
+.chain li+li{border-left:1px solid var(--rule)}
+.chain li+li::before{content:"";position:absolute;left:-7px;top:50%;width:12px;height:12px;background:var(--panel);border-top:1px solid var(--rule);border-right:1px solid var(--rule);transform:translateY(-50%) rotate(45deg)}
+.step{margin:0;display:flex;align-items:center;gap:8px;font:600 12px/1 var(--data);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.step span{display:inline-grid;place-items:center;width:20px;height:20px;border:1px solid var(--rule);border-radius:50%;font-size:11.5px;letter-spacing:0;color:var(--ink-2)}
+.val{margin:8px 0 0;font:600 34px/1 var(--data);white-space:nowrap}
+.val .u{margin-left:5px;font-size:17px;font-weight:500;color:var(--ink-3)}
+.cap{margin:0;color:var(--ink-2);font-size:14.5px;line-height:1.45}
+.cap strong{color:var(--ink)}
+
+/* density summary */
+.why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px}
+.why article{display:grid;gap:8px;align-content:start;min-width:0}
+.why p{margin:0;color:var(--ink-2);font-size:15.5px}
+.why strong{color:var(--ink)}
+
+/* charts */
+.figs,.lower{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);gap:40px;align-items:start}
+.fig{display:grid;gap:10px;align-content:start;min-width:0}
+.readline{display:flex;flex-wrap:wrap;gap:4px 16px;margin:2px 0 0;font:500 14.5px/1.3 var(--data);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.readline b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font:500 13.5px/1.2 var(--data);color:var(--ink-2)}
+.key{display:inline-flex;align-items:center;gap:6px}
+.key i{flex:none;display:inline-block;width:16px;height:2px;border-radius:1px}
+.key i.dot{width:10px;height:10px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 2px var(--paper)}
+.key i.ref{height:1px;background:var(--ink-3)}
+.key i.sw{width:14px;height:10px;border-radius:2px}
+.plot{position:relative;touch-action:pan-y;cursor:crosshair;border-radius:4px;-webkit-tap-highlight-color:transparent}
+.plot:focus{outline:none}
+.plot:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+.plot svg{display:block;width:100%;height:auto;overflow:visible;user-select:none;-webkit-user-select:none}
+.plot .grid{stroke:var(--grid);stroke-width:1}
+.plot .axis{stroke:var(--rule);stroke-width:1}
+.plot text{font:500 12.5px var(--data);fill:var(--ink-3);font-variant-numeric:tabular-nums}
+.plot .end-label,.plot .pt-label,.plot .lbl{fill:var(--ink-2);font-weight:600}
+.plot .std{stroke:var(--ink-3);stroke-width:1}
+.plot .halo{paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round}
+.plot .band{fill:var(--wash)}
+.plot .wash2{opacity:.16}
+.plot .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.plot .pt{fill:var(--h4);stroke:var(--paper);stroke-width:2}
+.plot .now-line{stroke:var(--signal);stroke-width:1;opacity:.6}
+.plot .now-dot{fill:var(--signal);stroke:var(--paper);stroke-width:2}
+.plot .cross{stroke:var(--ink-3);stroke-width:1}
+.plot .hdot{stroke:var(--paper);stroke-width:2}
+.plot .env{fill:none;stroke:var(--den-hi);stroke-width:2;stroke-linejoin:round}
+.plot .par{fill:none;stroke:var(--h3);stroke-width:2;stroke-linejoin:round}
+.plot .par.faded{opacity:.35}
+.plot .dry{fill:none;stroke:var(--ink-3);stroke-width:1;opacity:.7}
+.plot .posw{fill:var(--up-wash)}
+.plot .negw{fill:var(--down-wash)}
+.plot .lvl{stroke:var(--ink-3);stroke-width:1}
+.plot .lband{fill:var(--chip);opacity:.7}
+.plot .rock{fill:var(--den-edge);opacity:.55}
+.plot .fogl{stroke:var(--h2);stroke-width:1}
+.plot .pdot{fill:var(--h3);stroke:var(--paper);stroke-width:2}
+.tip{position:absolute;top:8px;left:0;z-index:2;min-width:150px;pointer-events:none;background:var(--panel);border:1px solid var(--rule);border-radius:8px;box-shadow:var(--lift);padding:8px 10px;font:500 13.5px/1.4 var(--data);color:var(--ink-2)}
+.tip.low{top:auto;bottom:40px}
+.tip .tt{margin-bottom:3px;font-weight:600;color:var(--ink)}
+.tip .row{display:grid;grid-template-columns:14px auto 1fr;align-items:center;gap:7px;white-space:nowrap}
+.tip .row i{height:2px;border-radius:1px}
+.tip .row b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* density table */
+table.dt{width:100%;border-collapse:separate;border-spacing:2px;font:500 15px/1 var(--data);font-variant-numeric:tabular-nums}
+.dt th,.dt td{padding:9px 8px;text-align:right;white-space:nowrap}
+.dt thead th{font-weight:600;font-size:13.5px;color:var(--ink-3);letter-spacing:.03em}
+.dt .grp th{padding:4px 8px 7px;text-align:center;font-size:12px;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--rule)}
+.dt tbody th{text-align:left;font-weight:600;color:var(--ink-2)}
+.dt td[data-rh]{background:var(--cell-lo);background:color-mix(in oklab, var(--cell-hi) var(--tp), var(--cell-lo));color:var(--ink);border-radius:3px}
+.dt td.now{box-shadow:inset 0 0 0 2px var(--signal);font-weight:600}
+.dt td.cap{color:var(--ink-2);padding-left:14px}
+
+/* method, benchmarks, references */
+.method{display:grid;gap:12px;align-content:start;min-width:0}
+.method ul{list-style:none;margin:0;padding:0}
+.method li{padding:10px 0;border-top:1px solid var(--rule);color:var(--ink-2);font-size:15px}
+.method li strong{color:var(--ink)}
+.bench td.diff{color:var(--ink);font-weight:600}
+.bench td.l{text-align:left;white-space:normal;min-width:130px}
+.refs{margin:0;padding-left:26px;color:var(--ink-2);font-size:14.5px;columns:2;column-gap:40px}
+.refs li{break-inside:avoid;padding:0 0 8px 4px}
+
+@media (max-width:960px){
+  .inputs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .group:nth-child(3){grid-column:1/-1;border-left:0;border-top:1px solid var(--rule)}
+  .figs,.lower,.two,.two.even{grid-template-columns:minmax(0,1fr)}
+  .facts4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chain{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chain li+li{border-left:0}
+  .chain li+li::before{display:none}
+  .chain li:nth-child(even){border-left:1px solid var(--rule)}
+  .chain li:nth-child(n+3){border-top:1px solid var(--rule)}
+  .refs{columns:1}
+}
+@media (max-width:820px){
+  .why{grid-template-columns:minmax(0,1fr);gap:24px}
+}
+@media (max-width:640px){
+  .inputs{grid-template-columns:minmax(0,1fr)}
+  .group+.group{border-left:0;border-top:1px solid var(--rule)}
+  .wf-row{grid-template-columns:minmax(0,1fr) 7.2em}
+  .wf-label{grid-column:1/-1}
+  .net{justify-items:start}
+}
+@media (max-width:480px){
+  .wrap{gap:44px;padding-block:24px 48px}
+  .group{padding:18px 16px 20px}
+  .inputs .presets{padding:14px 16px 16px}
+  .budget{padding:18px 16px 20px}
+  .net-num{font-size:54px}
+  .facts4,.mini,.energy{grid-template-columns:minmax(0,1fr)}
+  .chain{grid-template-columns:minmax(0,1fr)}
+  .chain li{padding:16px 16px 18px}
+  .chain li:nth-child(even){border-left:0}
+  .chain li+li{border-top:1px solid var(--rule)}
+  .val{font-size:30px}
+  .card{padding:16px}
+  table.dt{font-size:14px}
+  .dt th,.dt td{padding:8px 5px}
+  .dt td.cap{padding-left:8px}
+  .pt th,.pt td{padding:8px 5px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <p class="eyebrow">Ridge lift · lapse rates · fog · sun · density altitude</p>
+    <h1>Lift on a foggy sea cliff</h1>
+    <p class="lede">Ridge lift starts with wind hitting the cliff. The lapse rate, fog forming or evaporating, sunshine and air density each add to it or take some away. Set the conditions to see how much, in real units, with every formula checked against a published reference.</p>
+  </header>
+
+  <section class="inputs" aria-label="Conditions">
+    <div class="group">
+      <p class="panel-label">Air at the beach</p>
+      <div class="ctl">
+        <div class="ctl-head"><label for="temp">Air temperature</label><output id="tempOut" for="temp">60°F</output></div>
+        <input type="range" id="temp" min="40" max="90" step="1" value="60" style="--pct: 40%;">
+        <p class="ctl-help" id="tempHelp">15.6°C</p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="rh">Relative humidity</label><output id="rhOut" for="rh">97%</output></div>
+        <input type="range" id="rh" min="0" max="100" step="1" value="97" style="--pct: 97%;">
+        <p class="ctl-help" id="rhHelp">Dew point 59°F · 12.9 g/m³ of water vapor</p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="baro">Barometer</label><output id="baroOut" for="baro">29.92 inHg</output></div>
+        <input type="range" id="baro" min="29.30" max="30.50" step="0.01" value="29.92" style="--pct: 51.666666666666785%;">
+        <p class="ctl-help" id="baroHelp">1013 hPa (mb)</p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="sun">Sun heating the air</label><output id="sunOut" for="sun">150 W/m²</output></div>
+        <input type="range" id="sun" min="0" max="600" step="10" value="150" style="--pct: 25%;">
+        <p class="ctl-help">Heat from sun-warmed rock and sand into the air. Full sun at the ground is about 1,000 W/m².<a class="ref" href="#r24">24</a></p>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="panel-label">Wind, cliff and wing</p>
+      <div class="ctl">
+        <div class="ctl-head"><label for="wind">Wind at the cliff top</label><output id="windOut" for="wind">10 kn</output></div>
+        <input type="range" id="wind" min="2" max="40" step="1" value="10" style="--pct: 21.052631578947366%;">
+        <p class="ctl-help" id="windHelp">5.14 m/s · 11.5 mph</p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="ang">Wind angle off straight in</label><output id="angOut" for="ang">0°</output></div>
+        <input type="range" id="ang" min="0" max="60" step="5" value="0" style="--pct: 0%;">
+        <p class="ctl-help" id="angHelp">10.0 kn blows straight into the cliff.</p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="cliff">Cliff height</label><output id="cliffOut" for="cliff">600 ft</output></div>
+        <input type="range" id="cliff" min="300" max="800" step="10" value="600" style="--pct: 60%;">
+        <p class="ctl-help" id="cliffHelp">183 m</p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="slope">Slope the airflow follows</label><output id="slopeOut" for="slope">1:4</output></div>
+        <input type="range" id="slope" min="0.1" max="1" step="0.05" value="0.25" style="--pct: 16.666666666666664%;">
+        <p class="ctl-help" id="slopeHelp">Rise per run of the air rising up the face. FAA example: 1:4 gives about 6 ft/s in 15 kn.<a class="ref" href="#r18">18</a></p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="sink">Wing’s minimum sink</label><output id="sinkOut" for="sink">1.00 m/s</output></div>
+        <input type="range" id="sink" min="0.4" max="1.5" step="0.05" value="1" style="--pct: 54.54545454545454%;">
+        <p class="ctl-help" id="sinkHelp">197 fpm at standard sea-level air. Use your wing’s spec sheet.</p>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="panel-label">Air above the beach</p>
+      <div class="ctl">
+        <div class="ctl-head"><label for="lapse">Lapse rate of the air</label><output id="lapseOut" for="lapse">4.0°F</output></div>
+        <input type="range" id="lapse" min="-8" max="8" step="0.1" value="4" style="--pct: 75%;">
+        <p class="ctl-help" id="lapseHelp">Cooler by 4.0°F per 1,000 ft up (7.3°C/km), so 57.6°F at the cliff top. Dry rising air cools 5.35°F.</p>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="rhTop">Humidity at cliff-top height</label><output id="rhTopOut" for="rhTop">85%</output></div>
+        <input type="range" id="rhTop" min="10" max="100" step="1" value="85" style="--pct: 83.33333333333334%;">
+        <p class="ctl-help" id="rhTopHelp">Surrounding air at 600 ft, dew point 53°F. It holds 8.8 g of vapor per kg of air; beach air holds 10.7 g.</p>
+      </div>
+      <label class="toggle"><input type="checkbox" id="invOn" checked=""> Inversion at the top of the marine layer</label>
+      <div class="ctl" id="invBaseCtl">
+        <div class="ctl-head"><label for="invBase">Inversion base</label><output id="invBaseOut" for="invBase">1,200 ft</output></div>
+        <input type="range" id="invBase" min="200" max="3000" step="50" value="1200" style="--pct: 35.714285714285715%;">
+      </div>
+      <div class="ctl" id="invStrCtl">
+        <div class="ctl-head"><label for="invStr">Warming above it</label><output id="invStrOut" for="invStr">+10°F</output></div>
+        <input type="range" id="invStr" min="1" max="30" step="1" value="10" style="--pct: 31.03448275862069%;">
+        <p class="ctl-help">Warmer per 1,000 ft above the inversion base.</p>
+      </div>
+    </div>
+
+    <div class="presets" role="group" aria-labelledby="exLabel">
+      <span class="panel-label" id="exLabel">Example setups</span>
+      <button type="button" class="chip" data-preset="fog" aria-pressed="true">Fog on the face, drier above</button>
+      <button type="button" class="chip" data-preset="bank" aria-pressed="false">Inside a fog bank</button>
+      <button type="button" class="chip" data-preset="sunny" aria-pressed="false">Sunny, dry aloft</button>
+      <button type="button" class="chip" data-preset="lid" aria-pressed="false">Low inversion lid</button>
+      <button type="button" class="chip" data-preset="stable" aria-pressed="false">Light and stable</button>
+    </div>
+  </section>
+
+  <section class="budget" aria-labelledby="budgetTitle">
+    <div class="budget-head">
+      <div class="sec-head">
+        <h2 id="budgetTitle">Lift at the cliff top</h2>
+        <p class="sub">Steady ridge lift in front of the cliff: what the wind gives, what the air’s temperature and fog add or take away, and your wing’s sink.</p>
+      </div>
+      <div class="net" aria-live="polite">
+        <div class="net-row"><span class="net-num" id="netNum">+0.73</span><span class="net-unit">m/s</span></div>
+        <p class="net-fpm" id="netFpm">+144 fpm net climb, at best</p>
+        <p class="note" id="netBase">Ridge lift alone, if mixing erases the buoyancy: +0.24 m/s (+46 fpm)</p>
+      </div>
+    </div>
+    <div class="wf" id="wf"><div class="wf-row"><div class="wf-label">Ridge lift from the wind<small>10.0 kn into a 1:4 airflow slope</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div><div class="wf-bar up" style="left: 3.7037%; width: 61.3161%;"></div></div><div class="wf-val">+1.25 m/s<small>+246 fpm</small></div></div><div class="wf-row"><div class="wf-label">Stable air blocking<small>none: the wind carries the air over</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div></div><div class="wf-val">+0.00 m/s<small>+0 fpm</small></div></div><div class="wf-row"><div class="wf-label">Lapse rate<small>temperature alone: rising air ends up colder, no boost</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div></div><div class="wf-val">+0.00 m/s<small>+0 fpm</small></div></div><div class="wf-row"><div class="wf-label">Humid air is lighter<small>10.7 g/kg of vapor rising into air with 8.8 g/kg</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div><div class="wf-bar up" style="left: 65.0198%; width: 11.8964%;"></div></div><div class="wf-val">+0.24 m/s<small>+48 fpm</small></div></div><div class="wf-row"><div class="wf-label">Fog forming<small>heat from condensing fog above 203 ft</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div><div class="wf-bar up" style="left: 76.9163%; width: 11.8964%;"></div></div><div class="wf-val">+0.24 m/s<small>+48 fpm</small></div></div><div class="wf-row"><div class="wf-label">Sun warming the airflow<small>+0.04°F by the cliff top</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div><div class="wf-bar up" style="left: 88.8127%; width: 0.659714%;"></div></div><div class="wf-val">+0.01 m/s<small>+3 fpm</small></div></div><div class="wf-row"><div class="wf-label">Your wing’s sink<small>1.00 m/s at sea level, 1.01 m/s here</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div><div class="wf-bar down" style="left: 39.7316%; width: 49.7408%;"></div></div><div class="wf-val">−1.01 m/s<small>−199 fpm</small></div></div><div class="wf-row total"><div class="wf-label">Net climb</div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div><div class="wf-bar net" style="left: 3.7037%; width: 36.0279%;"></div></div><div class="wf-val">+0.73 m/s<small>+144 fpm</small></div></div><div class="wf-row extra"><div class="wf-label">In a thermal, add up to<small>sun-driven thermals</small></div><div class="wf-track"><div class="wf-zero" style="left: 3.7037%;"></div><div class="wf-bar th" style="left: 39.7316%; width: 56.5647%;"></div></div><div class="wf-val">+1.15 m/s<small>+227 fpm</small></div></div></div>
+    <dl class="facts4">
+      <div class="fact"><dt>Fog on the face</dt><dd id="fFog">203 ft</dd><p id="fFogP">Rising air saturates here, so fog forms on the face.</p></div>
+      <div class="fact"><dt>Top of the lift</dt><dd id="fTop">~1,200 ft</dd><p id="fTopP">The inversion at 1,200 ft caps the usual 1,200–1,800 ft lift band.</p></div>
+      <div class="fact"><dt>Stability</dt><dd id="fStab">Conditionally unstable</dd><p id="fStabP">Air riding up the cliff ends up buoyant here, so stability doesn’t hold it back.</p></div>
+      <div class="fact"><dt>Density altitude, cliff top</dt><dd id="fDA">824 ft</dd><p id="fDAP">Your wing flies as it would at 824 ft on a standard day.</p></div>
+    </dl>
+    <div class="copy-row">
+      <button type="button" class="ghost" id="copy">Copy this reading</button>
+      <p class="note">Buoyancy rows use parcel theory with no mixing, so they are upper limits.<a class="ref" href="#r20">20</a> Real rising air mixes with the air around it (entrainment), which dilutes buoyancy and, in drier surroundings, evaporates fog droplets and cools the air.<a class="ref" href="#r30">30</a><a class="ref" href="#r31">31</a> Very steep faces also make turbulent eddies that strong wind can carry well above the top.<a class="ref" href="#r18">18</a></p>
+    </div>
+    <p class="copy-fallback" id="copyFallback" hidden=""></p>
+  </section>
+
+  <section class="sec" aria-labelledby="lapseTitle">
+    <header class="sec-head">
+      <h2 id="lapseTitle">Lapse rates: does rising air keep rising?</h2>
+      <p class="sub">Air pushed up the cliff cools as it rises: about 5.35°F per 1,000 ft while it is clear,<a class="ref" href="#r14">14</a><a class="ref" href="#r32">32</a> and roughly half that once it is in fog, because condensing water gives its heat to the air.<a class="ref" href="#r15">15</a><a class="ref" href="#r32">32</a> When your air cools faster than the saturated rate but slower than the dry rate, it is conditionally unstable: rising air that saturates can end up lighter than its surroundings and get an extra push upward.<a class="ref" href="#r27">27</a><a class="ref" href="#r28">28</a><a class="ref" href="#r29">29</a> That only works if the air around it is drier, so humidity at cliff-top height matters. If the rising air ends up heavier, the wind still forces it up the face, but it stops rising soon after it clears the top.</p>
+    </header>
+    <div class="two">
+      <div class="fig">
+        <div class="legend" aria-hidden="true">
+          <span class="key"><i style="background:var(--den-hi)"></i>Surrounding air (your lapse rate)</span>
+          <span class="key"><i style="background:var(--h3)"></i>Air riding up the cliff</span>
+          <span class="key"><i class="ref"></i>Dry adiabat</span>
+          <span class="key"><i class="sw" style="background:var(--up-wash);box-shadow:inset 0 0 0 1px var(--up)"></i>Lighter than its surroundings: adds lift</span>
+          <span class="key"><i class="sw" style="background:var(--down-wash);box-shadow:inset 0 0 0 1px var(--down)"></i>Heavier: stops it above the cliff</span>
+        </div>
+        <div class="plot" id="plotLapse" tabindex="0" role="img" aria-label="Temperature against height for the surrounding air and the air rising up the cliff">
+          <svg aria-hidden="true" viewBox="0 0 633 410" width="633" height="410"><text x="42" y="10" text-anchor="end">ft</text><line class="grid" x1="50" x2="619" y1="378.0" y2="378.0"></line><text x="42" y="382.0" text-anchor="end">0</text><line class="grid" x1="50" x2="619" y1="318.0" y2="318.0"></line><text x="42" y="322.0" text-anchor="end">500</text><line class="grid" x1="50" x2="619" y1="258.0" y2="258.0"></line><text x="42" y="262.0" text-anchor="end">1,000</text><line class="grid" x1="50" x2="619" y1="198.0" y2="198.0"></line><text x="42" y="202.0" text-anchor="end">1,500</text><line class="grid" x1="50" x2="619" y1="138.0" y2="138.0"></line><text x="42" y="142.0" text-anchor="end">2,000</text><line class="grid" x1="50" x2="619" y1="78.0" y2="78.0"></line><text x="42" y="82.0" text-anchor="end">2,500</text><line class="grid" x1="50" x2="619" y1="18.0" y2="18.0"></line><text x="42" y="22.0" text-anchor="end">3,000</text><text x="50.0" y="402" text-anchor="middle">40°F</text><text x="212.6" y="402" text-anchor="middle">50°F</text><text x="375.1" y="402" text-anchor="middle">60°F</text><text x="537.7" y="402" text-anchor="middle">70°F</text><rect class="lband" x="50" y="162.0" width="569" height="72.0"></rect><path class="negw" d="M375.1 378.0 L372.4 374.1 L373.0 374.1 L375.1 378.0 Z"></path><path class="negw" d="M372.4 374.1 L369.6 370.1 L366.8 366.2 L364.0 362.3 L361.2 358.3 L358.4 354.4 L356.8 350.4 L360.2 350.4 L362.3 354.4 L364.5 358.3 L366.6 362.3 L368.7 366.2 L370.9 370.1 L373.0 374.1 Z"></path><path class="negw" d="M356.8 350.4 L355.4 346.5 L358.1 346.5 L360.2 350.4 Z"></path><path class="posw" d="M355.4 346.5 L354.0 342.6 L352.7 338.6 L351.3 334.7 L349.9 330.8 L348.6 326.8 L347.2 322.9 L345.8 318.9 L344.5 315.0 L343.1 311.1 L341.7 307.1 L340.3 303.2 L338.9 299.3 L337.5 295.3 L336.1 291.4 L334.7 287.4 L333.3 283.5 L331.9 279.6 L330.5 275.6 L329.1 271.7 L327.6 267.8 L326.2 263.8 L324.8 259.9 L323.4 256.0 L322.0 252.0 L320.5 248.1 L319.1 244.1 L317.7 240.2 L316.3 236.3 L314.9 232.3 L313.4 228.4 L312.0 224.5 L310.6 220.5 L315.4 220.5 L310.0 224.5 L304.7 228.4 L299.4 232.3 L298.3 236.3 L300.5 240.2 L302.6 244.1 L304.7 248.1 L306.9 252.0 L309.0 256.0 L311.1 259.9 L313.3 263.8 L315.4 267.8 L317.5 271.7 L319.7 275.6 L321.8 279.6 L323.9 283.5 L326.1 287.4 L328.2 291.4 L330.3 295.3 L332.5 299.3 L334.6 303.2 L336.7 307.1 L338.9 311.1 L341.0 315.0 L343.1 318.9 L345.3 322.9 L347.4 326.8 L349.5 330.8 L351.7 334.7 L353.8 338.6 L355.9 342.6 L358.1 346.5 Z"></path><path class="negw" d="M310.6 220.5 L309.2 216.6 L307.7 212.6 L306.3 208.7 L304.9 204.8 L303.5 200.8 L302.0 196.9 L300.6 193.0 L299.2 189.0 L297.7 185.1 L296.3 181.1 L294.9 177.2 L293.4 173.3 L292.0 169.3 L290.6 165.4 L289.1 161.5 L287.7 157.5 L286.3 153.6 L284.8 149.7 L283.4 145.7 L281.9 141.8 L280.5 137.8 L279.0 133.9 L277.6 130.0 L276.2 126.0 L274.7 122.1 L273.3 118.2 L271.8 114.2 L270.4 110.3 L268.9 106.3 L267.5 102.4 L266.0 98.5 L264.6 94.5 L263.1 90.6 L261.7 86.7 L260.2 82.7 L258.8 78.8 L257.3 74.9 L255.8 70.9 L254.4 67.0 L252.9 63.0 L251.5 59.1 L250.0 55.2 L248.5 51.2 L247.1 47.3 L245.6 43.4 L244.2 39.4 L242.7 35.5 L241.2 31.5 L239.8 27.6 L238.3 23.7 L236.8 19.7 L587.4 19.7 L582.1 23.7 L576.7 27.6 L571.4 31.5 L566.1 35.5 L560.7 39.4 L555.4 43.4 L550.1 47.3 L544.7 51.2 L539.4 55.2 L534.1 59.1 L528.7 63.0 L523.4 67.0 L518.1 70.9 L512.7 74.9 L507.4 78.8 L502.1 82.7 L496.7 86.7 L491.4 90.6 L486.0 94.5 L480.7 98.5 L475.4 102.4 L470.0 106.3 L464.7 110.3 L459.4 114.2 L454.0 118.2 L448.7 122.1 L443.4 126.0 L438.0 130.0 L432.7 133.9 L427.4 137.8 L422.0 141.8 L416.7 145.7 L411.4 149.7 L406.0 153.6 L400.7 157.5 L395.4 161.5 L390.0 165.4 L384.7 169.3 L379.4 173.3 L374.0 177.2 L368.7 181.1 L363.4 185.1 L358.0 189.0 L352.7 193.0 L347.4 196.9 L342.0 200.8 L336.7 204.8 L331.4 208.7 L326.0 212.6 L320.7 216.6 L315.4 220.5 Z"></path><line class="lvl" x1="50" x2="619" y1="306.0" y2="306.0"></line><line class="lvl" x1="50" x2="619" y1="234.0" y2="234.0"></line><line class="fogl" x1="50" x2="619" y1="353.6" y2="353.6"></line><rect class="rock" x="50" y="306.0" width="9" height="72.0"></rect><path class="dry" d="M375.1 378.0 L372.4 374.1 L369.6 370.1 L366.8 366.2 L364.0 362.3 L361.2 358.3 L358.4 354.4 L355.6 350.4 L352.8 346.5 L350.0 342.6 L347.3 338.6 L344.5 334.7 L341.7 330.8 L338.9 326.8 L336.1 322.9 L333.3 318.9 L330.5 315.0 L327.7 311.1 L324.9 307.1 L322.1 303.2 L319.3 299.3 L316.5 295.3 L313.6 291.4 L310.8 287.4 L308.0 283.5 L305.2 279.6 L302.3 275.6 L299.5 271.7 L296.7 267.8 L293.9 263.8 L291.0 259.9 L288.2 256.0 L285.4 252.0 L282.5 248.1 L279.7 244.1 L276.9 240.2 L274.1 236.3 L271.2 232.3 L268.4 228.4 L265.6 224.5 L262.8 220.5 L259.9 216.6 L257.1 212.6 L254.3 208.7 L251.4 204.8 L248.6 200.8 L245.8 196.9 L243.0 193.0 L240.1 189.0 L237.3 185.1 L234.5 181.1 L231.7 177.2 L228.8 173.3 L226.0 169.3 L223.2 165.4 L220.3 161.5 L217.5 157.5 L214.7 153.6 L211.9 149.7 L209.0 145.7 L206.2 141.8 L203.4 137.8 L200.6 133.9 L197.7 130.0 L194.9 126.0 L192.1 122.1 L189.2 118.2 L186.4 114.2 L183.6 110.3 L180.8 106.3 L177.9 102.4 L175.1 98.5 L172.3 94.5 L169.5 90.6 L166.6 86.7 L163.8 82.7 L161.0 78.8 L158.1 74.9 L155.3 70.9 L152.5 67.0 L149.7 63.0 L146.8 59.1 L144.0 55.2 L141.2 51.2 L138.4 47.3 L135.5 43.4 L132.7 39.4 L129.9 35.5 L127.1 31.5 L124.2 27.6 L121.4 23.7 L118.6 19.7"></path><path class="env" d="M375.1 378.0 L373.0 374.1 L370.9 370.1 L368.7 366.2 L366.6 362.3 L364.5 358.3 L362.3 354.4 L360.2 350.4 L358.1 346.5 L355.9 342.6 L353.8 338.6 L351.7 334.7 L349.5 330.8 L347.4 326.8 L345.3 322.9 L343.1 318.9 L341.0 315.0 L338.9 311.1 L336.7 307.1 L334.6 303.2 L332.5 299.3 L330.3 295.3 L328.2 291.4 L326.1 287.4 L323.9 283.5 L321.8 279.6 L319.7 275.6 L317.5 271.7 L315.4 267.8 L313.3 263.8 L311.1 259.9 L309.0 256.0 L306.9 252.0 L304.7 248.1 L302.6 244.1 L300.5 240.2 L298.3 236.3 L299.4 232.3 L304.7 228.4 L310.0 224.5 L315.4 220.5 L320.7 216.6 L326.0 212.6 L331.4 208.7 L336.7 204.8 L342.0 200.8 L347.4 196.9 L352.7 193.0 L358.0 189.0 L363.4 185.1 L368.7 181.1 L374.0 177.2 L379.4 173.3 L384.7 169.3 L390.0 165.4 L395.4 161.5 L400.7 157.5 L406.0 153.6 L411.4 149.7 L416.7 145.7 L422.0 141.8 L427.4 137.8 L432.7 133.9 L438.0 130.0 L443.4 126.0 L448.7 122.1 L454.0 118.2 L459.4 114.2 L464.7 110.3 L470.0 106.3 L475.4 102.4 L480.7 98.5 L486.0 94.5 L491.4 90.6 L496.7 86.7 L502.1 82.7 L507.4 78.8 L512.7 74.9 L518.1 70.9 L523.4 67.0 L528.7 63.0 L534.1 59.1 L539.4 55.2 L544.7 51.2 L550.1 47.3 L555.4 43.4 L560.7 39.4 L566.1 35.5 L571.4 31.5 L576.7 27.6 L582.1 23.7 L587.4 19.7"></path><path class="par faded" d="M294.9 177.2 L293.4 173.3 L292.0 169.3 L290.6 165.4 L289.1 161.5 L287.7 157.5 L286.3 153.6 L284.8 149.7 L283.4 145.7 L281.9 141.8 L280.5 137.8 L279.0 133.9 L277.6 130.0 L276.2 126.0 L274.7 122.1 L273.3 118.2 L271.8 114.2 L270.4 110.3 L268.9 106.3 L267.5 102.4 L266.0 98.5 L264.6 94.5 L263.1 90.6 L261.7 86.7 L260.2 82.7 L258.8 78.8 L257.3 74.9 L255.8 70.9 L254.4 67.0 L252.9 63.0 L251.5 59.1 L250.0 55.2 L248.5 51.2 L247.1 47.3 L245.6 43.4 L244.2 39.4 L242.7 35.5 L241.2 31.5 L239.8 27.6 L238.3 23.7 L236.8 19.7"></path><path class="par" d="M375.1 378.0 L372.4 374.1 L369.6 370.1 L366.8 366.2 L364.0 362.3 L361.2 358.3 L358.4 354.4 L356.8 350.4 L355.4 346.5 L354.0 342.6 L352.7 338.6 L351.3 334.7 L349.9 330.8 L348.6 326.8 L347.2 322.9 L345.8 318.9 L344.5 315.0 L343.1 311.1 L341.7 307.1 L340.3 303.2 L338.9 299.3 L337.5 295.3 L336.1 291.4 L334.7 287.4 L333.3 283.5 L331.9 279.6 L330.5 275.6 L329.1 271.7 L327.6 267.8 L326.2 263.8 L324.8 259.9 L323.4 256.0 L322.0 252.0 L320.5 248.1 L319.1 244.1 L317.7 240.2 L316.3 236.3 L314.9 232.3 L313.4 228.4 L312.0 224.5 L310.6 220.5 L309.2 216.6 L307.7 212.6 L306.3 208.7 L304.9 204.8 L303.5 200.8 L302.0 196.9 L300.6 193.0 L299.2 189.0 L297.7 185.1 L296.3 181.1 L294.9 177.2"></path><circle class="pdot" cx="341.3" cy="306.0" r="4.5"></circle><circle class="pdot" cx="294.9" cy="177.2" r="3.5"></circle><text class="lbl halo" x="615" y="173.2" text-anchor="end">Rising air stops ~1,673 ft</text><text class="lbl halo" x="615" y="202.0" text-anchor="end">Usual lift top (FAA)</text><text class="lbl halo" x="615" y="230.0" text-anchor="end">Inversion 1,200 ft</text><text class="lbl halo" x="615" y="302.0" text-anchor="end">Cliff top 600 ft</text><text class="lbl halo" x="615" y="349.6" text-anchor="end">Fog forms 203 ft</text></svg>
+          <div class="tip" hidden=""></div>
+        </div>
+        <p class="note">Lines are air temperatures. Shading is buoyancy, which also counts humidity and fog droplets, so moist air can be lighter even when a little colder. Point at the chart to read any height.</p>
+      </div>
+      <div class="side">
+        <div class="table-scroll">
+          <table class="pt">
+            <caption class="sr-only">Lapse rates compared</caption>
+            <thead><tr><th scope="col">Lapse rate</th><th scope="col">°F per 1,000 ft</th><th scope="col">°C per km</th></tr></thead>
+            <tbody id="lapseBody"><tr><th scope="row">Dry rising air</th><td class="you">5.35</td><td>9.75</td></tr><tr><th scope="row">Rising air in fog at 59.0°F</th><td class="you">2.62</td><td>4.78</td></tr><tr><th scope="row">Your air, up to 1,200 ft</th><td class="you">4.00</td><td>7.29</td></tr><tr><th scope="row">Above the inversion</th><td class="you">-10.00</td><td>-18.23</td></tr></tbody>
+          </table>
+        </div>
+        <p id="lapseVerdict"><strong>Conditionally unstable.</strong> Clear rising air cools faster than your air, but air rising in fog cools more slowly, so fog on the face can leave it warmer than its surroundings. If the air around it is also drier, it ends up lighter, and that extra buoyancy adds lift.</p>
+        <dl class="mini">
+          <div><dt>Rising air at the cliff top</dt><dd id="mDT">+0.32°F<small>warmer than the air around it, and 0.14% lighter with moisture counted</small></dd></div>
+          <div><dt>Buoyancy up the cliff</dt><dd id="mE">+0.74 J/kg<small>energy gained from buoyancy</small></dd></div>
+          <div><dt>Froude number</dt><dd id="mFr">No limit<small>rising air is buoyant</small></dd></div>
+          <div><dt>Rising air stops near</dt><dd id="mStop">~1,673 ft<small>1,073 ft above the cliff top</small></dd></div>
+        </dl>
+        <p class="note" id="lapseNote">Clear rising air cools 5.35°F per 1,000 ft. In fog it cools about 2.6°F, which is why fog on the face can add lift when your air cools faster than that.</p>
+        <p class="note" id="lapseWarn" hidden=""></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="fogTitle">
+    <header class="sec-head">
+      <h2 id="fogTitle">Fog forming and evaporating</h2>
+      <p class="sub">Condensing fog gives heat to the air around it, and evaporating fog takes the same heat back.<a class="ref" href="#r10">10</a> Fog that forms as air rides up the cliff helps lift. Fog that evaporates into drier air chills it and makes sink.</p>
+    </header>
+    <div class="two even">
+      <div class="side">
+        <h3>Forming as air rides up the cliff</h3>
+        <p id="fogForm">Air riding up the cliff reaches its dew point at <strong>200 ft</strong>, so fog forms on the face there. Between there and the top, <strong>0.25 g</strong> of water condenses out of each kilogram of air and releases <strong>627 J/kg</strong> of heat. That keeps the rising air <strong>1.07°F</strong> warmer than clear air would be, worth <strong>+0.24 m/s</strong> of lift here, after the weight of the droplets.</p>
+        <h3>Sun burning it off</h3>
+        <p id="fogBurn">Evaporating a fog layer <strong>1,200 ft</strong> deep holding <strong>0.20 g/m³</strong> takes <strong>180 kJ</strong> per square meter of ground. Full sunshine, about 1,000 W/m², supplies that in <strong>3.0 minutes</strong> at the very least. Burn-off is slower in practice, because only part of the sunlight goes into evaporating droplets. Sunlight pays that heat, so fog burned off by the sun does not chill the air.</p>
+      </div>
+      <div class="card">
+        <h3>Evaporating into drier air</h3>
+        <div class="fog-ctl">
+          <div class="ctl">
+            <div class="ctl-head"><label for="lwc">Fog water in the air</label><output id="lwcOut" for="lwc">0.20 g/m³</output></div>
+            <input type="range" id="lwc" min="0" max="0.5" step="0.01" value="0.2" style="--pct: 40%;">
+          </div>
+          <div class="presets" role="group" aria-labelledby="fogRefLabel">
+            <span class="panel-label" id="fogRefLabel">Published values<a class="ref" href="#r8">8</a></span>
+            <button type="button" class="chip fogchip" data-lwc="0.05" aria-pressed="false">Medium fog · 0.05 g/m³ · about 300 m visibility</button>
+            <button type="button" class="chip fogchip" data-lwc="0.5" aria-pressed="false">Thick fog · 0.50 g/m³ · about 50 m visibility</button>
+          </div>
+        </div>
+        <p class="sub" id="fogText">The beach air can only take up <strong>0.15 g/m³</strong> before it saturates at <strong>59.5°F</strong>. The rest stays as droplets. Evaporating <strong>0.15 g/m³</strong> takes <strong>368 J</strong> of heat out of each cubic meter, <strong>23 times</strong> the wind’s kinetic energy. That heat goes into water vapor, not wind. The chilled air is <strong>+0.08%</strong> denser than the air around it, so it sinks.</p>
+        <div class="table-scroll">
+          <table class="pt ba">
+            <caption class="sr-only">Beach air before and after the fog evaporates into it</caption>
+            <thead><tr><th scope="col"></th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+            <tbody id="baBody"><tr><th scope="row">Air temperature</th><td>60.0°F</td><td class="you">59.5°F<small>−0.54°F</small></td></tr><tr><th scope="row">Relative humidity</th><td>97%</td><td class="you">100.0%<small>+3.0 points</small></td></tr><tr><th scope="row">Liquid fog water</th><td>0.20 g/m³</td><td class="you">0.05 g/m³<small>−0.15 g/m³</small></td></tr><tr><th scope="row">Air density, with droplets</th><td>1.2150 kg/m³</td><td class="you">1.2160 kg/m³<small>+0.08%</small></td></tr></tbody>
+          </table>
+        </div>
+        <dl class="energy">
+          <div><dt>Heat taken from the air</dt><dd id="eHeat">368 J/m³</dd></div>
+          <div><dt>Sink it can drive</dt><dd id="eSink">−0.71 m/s<small>−139 fpm after 100 ft</small></dd></div>
+          <div><dt id="eKeLabel">Wind’s kinetic energy at 10 kn</dt><dd id="eKe">15.8 J/m³</dd></div>
+        </dl>
+        <p class="note">The droplets mix into the beach air set above and evaporate with no outside heat, as in the wet-bulb process.<a class="ref" href="#r9">9</a> Sink is parcel theory over a 100 ft drop, with no mixing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="sunTitle">
+    <header class="sec-head">
+      <h2 id="sunTitle">Sun and heat transfer</h2>
+      <p class="sub" id="sunText">Sunshine heats rock and sand, and they heat the air touching them. At <strong>10.0 kn</strong> into the cliff, the air riding up the face moves past so fast that <strong>150 W/m²</strong> warms it by only <strong>+0.043°F</strong> on average. So in ridge-lift wind the sun mostly works in other ways. It builds pockets of warm air that break away as thermals, typically about <strong>1.2 m/s</strong> here.<a class="ref" href="#r22">22</a> It also heats the land faster than the sea, which drives the onshore sea breeze.<a class="ref" href="#r25">25</a> In lighter wind the same heating warms the air more, and thermals matter more.</p>
+    </header>
+    <dl class="facts4">
+      <div class="fact"><dt>Average warming up the face</dt><dd id="sDT">+0.043°F</dd><p>Sun heat flux ÷ (air density × specific heat × wind into the cliff).<a class="ref" href="#r12">12</a></p></div>
+      <div class="fact"><dt>Heat needed for 1°F</dt><dd id="sNeed">3,493 W/m²</dd><p id="sNeedP">About 3.5 times full sunshine, at 10.0 kn into the cliff.</p></div>
+      <div class="fact"><dt>Thermal strength</dt><dd id="sW">1.15 m/s<small>227 fpm</small></dd><p id="sWP">Deardorff velocity for a 1,200 ft mixed layer (up to the inversion).</p></div>
+      <div class="fact"><dt>Lift from sun warming</dt><dd id="sLift">+0.013 m/s</dd><p>The sun row in the lift budget.</p></div>
+    </dl>
+  </section>
+
+  <section class="sec" aria-labelledby="feelTitle">
+    <header class="sec-head">
+      <h2 id="feelTitle">How the wind feels</h2>
+      <p class="sub">Denser air presses harder at the same wind speed and lets your wing fly slower. Density altitude says how high you would have to go on a standard day to find air this thin.<a class="ref" href="#r1">1</a><a class="ref" href="#r23">23</a></p>
+    </header>
+    <div class="two even">
+      <div class="card">
+        <p class="panel-label">Air density at the beach</p>
+        <svg class="dial" id="dial" viewBox="0 0 320 196" role="img" aria-labelledby="dialTitle"><title id="dialTitle">Air density gauge from soft (1.10 kg/m³) to punchy (1.30 kg/m³)</title><defs><linearGradient id="dialGrad" gradientUnits="userSpaceOnUse" x1="48" y1="0" x2="272" y2="0"><stop offset="0" style="stop-color:var(--den-lo)"></stop><stop offset="1" style="stop-color:var(--den-hi)"></stop></linearGradient></defs><path class="axis" d="M57 156 A103 103 0 0 1 263 156"></path><path class="track" stroke="url(#dialGrad)" d="M48 156 A112 112 0 0 1 272 156"></path><line class="tk major" x1="37.0" y1="156.0" x2="28.0" y2="156.0"></line><text x="15.0" y="160.0" text-anchor="middle">1.10</text><line class="tk" x1="38.5" y1="136.8" x2="34.6" y2="136.1"></line><line class="tk" x1="43.0" y1="118.0" x2="39.2" y2="116.8"></line><line class="tk" x1="50.4" y1="100.2" x2="46.8" y2="98.3"></line><line class="tk" x1="60.5" y1="83.7" x2="57.3" y2="81.4"></line><line class="tk major" x1="73.0" y1="69.0" x2="66.7" y2="62.7"></line><text x="57.5" y="57.5" text-anchor="middle">1.15</text><line class="tk" x1="87.7" y1="56.5" x2="85.4" y2="53.3"></line><line class="tk" x1="104.2" y1="46.4" x2="102.3" y2="42.8"></line><line class="tk" x1="122.0" y1="39.0" x2="120.8" y2="35.2"></line><line class="tk" x1="140.8" y1="34.5" x2="140.1" y2="30.6"></line><line class="tk major" x1="160.0" y1="33.0" x2="160.0" y2="24.0"></line><text x="160.0" y="15.0" text-anchor="middle">1.20</text><line class="tk" x1="179.2" y1="34.5" x2="179.9" y2="30.6"></line><line class="tk" x1="198.0" y1="39.0" x2="199.2" y2="35.2"></line><line class="tk" x1="215.8" y1="46.4" x2="217.7" y2="42.8"></line><line class="tk" x1="232.3" y1="56.5" x2="234.6" y2="53.3"></line><line class="tk major" x1="247.0" y1="69.0" x2="253.3" y2="62.7"></line><text x="262.5" y="57.5" text-anchor="middle">1.25</text><line class="tk" x1="259.5" y1="83.7" x2="262.7" y2="81.4"></line><line class="tk" x1="269.6" y1="100.2" x2="273.2" y2="98.3"></line><line class="tk" x1="277.0" y1="118.0" x2="280.8" y2="116.8"></line><line class="tk" x1="281.5" y1="136.8" x2="285.4" y2="136.1"></line><line class="tk major" x1="283.0" y1="156.0" x2="292.0" y2="156.0"></line><text x="305.0" y="160.0" text-anchor="middle">1.30</text><line class="std-halo" x1="199.4" y1="60.9" x2="206.3" y2="44.2"></line><line class="std" x1="199.4" y1="60.9" x2="206.3" y2="44.2"></line><polygon class="std-mark" points="207.1,42.4 206.6,31.4 215.2,35.0"></polygon><text class="std-label" x="215.9" y="25.1" text-anchor="middle">Standard</text><text class="end" x="48" y="180" text-anchor="middle">SOFT</text><text class="end" x="272" y="180" text-anchor="middle">PUNCHY</text><text x="160" y="190" text-anchor="middle">kg/m³</text><g class="needle" id="needle" style="transform: rotate(103.31deg);"><line x1="176" y1="156" x2="66" y2="156"></line><circle cx="160" cy="156" r="8"></circle></g></svg>
+        <div class="hero"><span class="hero-num" id="rho">1.215</span><span class="hero-unit">kg/m³</span></div>
+        <p class="vs" id="vsStd">0.8% less push than standard air</p>
+        <p class="note center">Standard air is 59°F and dry at 29.92 inHg: 1.225 kg/m³.<a class="ref" href="#r1">1</a></p>
+      </div>
+      <div class="side">
+        <dl class="mini">
+          <div><dt>Density altitude, beach</dt><dd id="daBeach">286 ft<small>1.215 kg/m³</small></dd></div>
+          <div><dt id="daTopLabel">Density altitude, 600 ft cliff top</dt><dd id="daTop">824 ft<small>1.196 kg/m³</small></dd></div>
+          <div><dt id="qLabel">Wind pressure at 10 kn</dt><dd id="qVal">15.8 N/m²<small>0.33 lbf/ft²</small></dd></div>
+          <div><dt>Same push in standard air</dt><dd id="eqWind">9.9 kn<small>at the cliff top</small></dd></div>
+        </dl>
+        <p id="feelWing">At the cliff top your wing’s true airspeed and sink are both <strong>+1.2%</strong> compared with standard sea-level air, because lift and drag scale with density × speed².</p>
+        <p id="feelTwice">Wind speed counts twice: faster wind brings more air each second and more momentum in every kilogram. So push grows with speed squared, while density counts once.</p>
+      </div>
+    </div>
+    <ol class="chain">
+      <li>
+        <p class="step"><span>1</span>Air arriving</p>
+        <p class="val"><span id="cVol">5.14</span><span class="u">m³</span></p>
+        <p class="cap" id="cVolCap">reaches each square meter facing the wind every second, because the wind moves <strong>5.14 m/s</strong>.</p>
+      </li>
+      <li>
+        <p class="step"><span>2</span>Mass</p>
+        <p class="val"><span id="cMass">6.15</span><span class="u">kg</span></p>
+        <p class="cap" id="cMassCap">5.14 m³ × <strong>1.196 kg/m³</strong>, the air density at the cliff top.</p>
+      </li>
+      <li>
+        <p class="step"><span>3</span>Momentum</p>
+        <p class="val"><span id="cMom">31.6</span><span class="u">kg·m/s</span></p>
+        <p class="cap" id="cMomCap">6.15 kg × 5.14 m/s, arriving every second. Stopping all of it would take <strong>31.6 N</strong> on each square meter.</p>
+      </li>
+      <li>
+        <p class="step"><span>4</span>Push on a flat plate</p>
+        <p class="val"><span id="cPush">20.3</span><span class="u">N/m²</span></p>
+        <p class="cap">A flat plate facing the wind feels 1.28 × ½ρv², 64% of a full stop.<a class="ref" href="#r5">5</a><a class="ref" href="#r6">6</a></p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="sec" aria-labelledby="whyTitle">
+    <header class="sec-head">
+      <h2 id="whyTitle">Air density reference</h2>
+      <p class="sub">What sets the density at the beach, from 40°F to 90°F.</p>
+    </header>
+    <div class="why">
+      <article>
+        <h3>Moist air is lighter</h3>
+        <p><span id="k1">A water vapor molecule (18.015 g/mol) is lighter than the average dry-air molecule (28.965 g/mol) it replaces. At <strong>60°F</strong>, <strong>97%</strong> humidity makes the air <strong>0.64%</strong> lighter than dry air. Dry air would have to be <strong>3.3°F</strong> warmer to be this light (the virtual temperature).</span><a class="ref" href="#r3">3</a><a class="ref" href="#r13">13</a></p>
+      </article>
+      <article>
+        <h3>Warm air holds more water</h3>
+        <p><span id="k2">Air at 90°F can hold <strong>34.2 g/m³</strong> of water vapor. At 40°F it holds only <strong>6.6 g/m³</strong>, about a fifth as much. So going from dry to saturated thins the air <strong>1.8%</strong> at 90°F and only <strong>0.31%</strong> at 40°F.</span><a class="ref" href="#r2">2</a></p>
+      </article>
+      <article>
+        <h3>Temperature matters most</h3>
+        <p id="k3">From 40°F to 90°F at <strong>97%</strong> humidity, the air thins <strong>10.4%</strong>. Humidity alone never moves it more than <strong>1.8%</strong> in this range. Cold, dry air pushes <strong>12%</strong> harder than hot, saturated air at the same wind speed.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="figs">
+    <div class="fig">
+      <h3>Air density from 40°F to 90°F</h3>
+      <p class="sub">One line per humidity level. The lines spread apart as the air warms, because warm air holds more water. Tap or drag across the chart to set the temperature.</p>
+      <p class="readline" id="readD"><span>At <b>60°F:</b></span><span>dry <b>1.223 kg/m³</b></span><span>saturated <b>1.215 kg/m³</b></span><span>yours (97%) <b>1.215 kg/m³</b></span></p>
+      <div class="legend" aria-hidden="true">
+        <span class="key"><i style="background:var(--h0)"></i>0%</span>
+        <span class="key"><i style="background:var(--h1)"></i>25%</span>
+        <span class="key"><i style="background:var(--h2)"></i>50%</span>
+        <span class="key"><i style="background:var(--h3)"></i>75%</span>
+        <span class="key"><i style="background:var(--h4)"></i>100% humidity</span>
+        <span class="key"><i class="dot"></i>Your setting</span>
+        <span class="key"><i class="ref"></i>Standard air</span>
+      </div>
+      <div class="plot" id="plotDensity" tabindex="0" role="slider" aria-label="Density chart. Left and right arrows change the temperature." aria-valuemin="40" aria-valuemax="90" aria-valuenow="60" aria-valuetext="60°F, density 1.215 kg/m³">
+        <svg aria-hidden="true" viewBox="0 0 633 350" width="633" height="350"><text x="38" y="12" text-anchor="end">kg/m³</text><line class="grid" x1="46" x2="591" y1="320.0" y2="320.0"></line><text x="38" y="324.0" text-anchor="end">1.10</text><line class="grid" x1="46" x2="591" y1="246.0" y2="246.0"></line><text x="38" y="250.0" text-anchor="end">1.15</text><line class="grid" x1="46" x2="591" y1="172.0" y2="172.0"></line><text x="38" y="176.0" text-anchor="end">1.20</text><line class="grid" x1="46" x2="591" y1="98.0" y2="98.0"></line><text x="38" y="102.0" text-anchor="end">1.25</text><line class="grid" x1="46" x2="591" y1="24.0" y2="24.0"></line><text x="38" y="28.0" text-anchor="end">1.30</text><text x="46.0" y="342" text-anchor="middle">40°F</text><text x="155.0" y="342" text-anchor="middle">50°F</text><text x="264.0" y="342" text-anchor="middle">60°F</text><text x="373.0" y="342" text-anchor="middle">70°F</text><text x="482.0" y="342" text-anchor="middle">80°F</text><text x="591.0" y="342" text-anchor="middle">90°F</text><line class="std" x1="46" x2="591" y1="135.0" y2="135.0"></line><text class="halo" x="587" y="129.0" text-anchor="end">Standard air 1.225 kg/m³</text><path class="band" d="M46.0 66.1 L56.9 69.9 L67.8 73.6 L78.7 77.3 L89.6 81.1 L100.5 84.8 L111.4 88.4 L122.3 92.1 L133.2 95.8 L144.1 99.4 L155.0 103.0 L165.9 106.6 L176.8 110.2 L187.7 113.8 L198.6 117.4 L209.5 121.0 L220.4 124.5 L231.3 128.0 L242.2 131.5 L253.1 135.0 L264.0 138.5 L274.9 142.0 L285.8 145.5 L296.7 148.9 L307.6 152.4 L318.5 155.8 L329.4 159.2 L340.3 162.6 L351.2 166.0 L362.1 169.3 L373.0 172.7 L383.9 176.0 L394.8 179.4 L405.7 182.7 L416.6 186.0 L427.5 189.3 L438.4 192.6 L449.3 195.9 L460.2 199.1 L471.1 202.4 L482.0 205.6 L492.9 208.8 L503.8 212.0 L514.7 215.2 L525.6 218.4 L536.5 221.6 L547.4 224.7 L558.3 227.9 L569.2 231.0 L580.1 234.2 L591.0 237.3 L591.0 268.1 L580.1 264.0 L569.2 260.0 L558.3 256.0 L547.4 252.1 L536.5 248.1 L525.6 244.1 L514.7 240.2 L503.8 236.2 L492.9 232.3 L482.0 228.3 L471.1 224.4 L460.2 220.5 L449.3 216.6 L438.4 212.7 L427.5 208.8 L416.6 204.9 L405.7 201.0 L394.8 197.1 L383.9 193.2 L373.0 189.3 L362.1 185.4 L351.2 181.5 L340.3 177.6 L329.4 173.8 L318.5 169.9 L307.6 166.0 L296.7 162.1 L285.8 158.2 L274.9 154.4 L264.0 150.5 L253.1 146.6 L242.2 142.7 L231.3 138.8 L220.4 134.9 L209.5 131.0 L198.6 127.1 L187.7 123.2 L176.8 119.3 L165.9 115.4 L155.0 111.5 L144.1 107.6 L133.2 103.6 L122.3 99.7 L111.4 95.8 L100.5 91.8 L89.6 87.9 L78.7 83.9 L67.8 80.0 L56.9 76.0 L46.0 72.0 Z"></path><path class="ln" style="stroke:var(--h0)" d="M46.0 66.1 L56.9 69.9 L67.8 73.6 L78.7 77.3 L89.6 81.1 L100.5 84.8 L111.4 88.4 L122.3 92.1 L133.2 95.8 L144.1 99.4 L155.0 103.0 L165.9 106.6 L176.8 110.2 L187.7 113.8 L198.6 117.4 L209.5 121.0 L220.4 124.5 L231.3 128.0 L242.2 131.5 L253.1 135.0 L264.0 138.5 L274.9 142.0 L285.8 145.5 L296.7 148.9 L307.6 152.4 L318.5 155.8 L329.4 159.2 L340.3 162.6 L351.2 166.0 L362.1 169.3 L373.0 172.7 L383.9 176.0 L394.8 179.4 L405.7 182.7 L416.6 186.0 L427.5 189.3 L438.4 192.6 L449.3 195.9 L460.2 199.1 L471.1 202.4 L482.0 205.6 L492.9 208.8 L503.8 212.0 L514.7 215.2 L525.6 218.4 L536.5 221.6 L547.4 224.7 L558.3 227.9 L569.2 231.0 L580.1 234.2 L591.0 237.3"></path><path class="ln" style="stroke:var(--h1)" d="M46.0 67.6 L56.9 71.4 L67.8 75.2 L78.7 79.0 L89.6 82.8 L100.5 86.5 L111.4 90.3 L122.3 94.0 L133.2 97.7 L144.1 101.4 L155.0 105.1 L165.9 108.8 L176.8 112.5 L187.7 116.2 L198.6 119.8 L209.5 123.5 L220.4 127.1 L231.3 130.7 L242.2 134.3 L253.1 137.9 L264.0 141.5 L274.9 145.1 L285.8 148.7 L296.7 152.2 L307.6 155.8 L318.5 159.3 L329.4 162.8 L340.3 166.3 L351.2 169.9 L362.1 173.4 L373.0 176.8 L383.9 180.3 L394.8 183.8 L405.7 187.3 L416.6 190.7 L427.5 194.2 L438.4 197.6 L449.3 201.0 L460.2 204.5 L471.1 207.9 L482.0 211.3 L492.9 214.7 L503.8 218.1 L514.7 221.5 L525.6 224.8 L536.5 228.2 L547.4 231.6 L558.3 234.9 L569.2 238.3 L580.1 241.6 L591.0 245.0"></path><path class="ln" style="stroke:var(--h2)" d="M46.0 69.1 L56.9 72.9 L67.8 76.8 L78.7 80.6 L89.6 84.5 L100.5 88.3 L111.4 92.1 L122.3 95.9 L133.2 99.7 L144.1 103.5 L155.0 107.3 L165.9 111.0 L176.8 114.8 L187.7 118.5 L198.6 122.3 L209.5 126.0 L220.4 129.7 L231.3 133.4 L242.2 137.1 L253.1 140.8 L264.0 144.5 L274.9 148.2 L285.8 151.9 L296.7 155.5 L307.6 159.2 L318.5 162.8 L329.4 166.5 L340.3 170.1 L351.2 173.7 L362.1 177.4 L373.0 181.0 L383.9 184.6 L394.8 188.2 L405.7 191.8 L416.6 195.4 L427.5 199.0 L438.4 202.6 L449.3 206.2 L460.2 209.8 L471.1 213.4 L482.0 217.0 L492.9 220.5 L503.8 224.1 L514.7 227.7 L525.6 231.3 L536.5 234.8 L547.4 238.4 L558.3 242.0 L569.2 245.5 L580.1 249.1 L591.0 252.7"></path><path class="ln" style="stroke:var(--h3)" d="M46.0 70.5 L56.9 74.5 L67.8 78.4 L78.7 82.3 L89.6 86.2 L100.5 90.1 L111.4 93.9 L122.3 97.8 L133.2 101.7 L144.1 105.5 L155.0 109.4 L165.9 113.2 L176.8 117.0 L187.7 120.9 L198.6 124.7 L209.5 128.5 L220.4 132.3 L231.3 136.1 L242.2 139.9 L253.1 143.7 L264.0 147.5 L274.9 151.3 L285.8 155.0 L296.7 158.8 L307.6 162.6 L318.5 166.4 L329.4 170.1 L340.3 173.9 L351.2 177.6 L362.1 181.4 L373.0 185.1 L383.9 188.9 L394.8 192.6 L405.7 196.4 L416.6 200.1 L427.5 203.9 L438.4 207.6 L449.3 211.4 L460.2 215.1 L471.1 218.9 L482.0 222.7 L492.9 226.4 L503.8 230.2 L514.7 233.9 L525.6 237.7 L536.5 241.5 L547.4 245.2 L558.3 249.0 L569.2 252.8 L580.1 256.6 L591.0 260.4"></path><path class="ln" style="stroke:var(--h4)" d="M46.0 72.0 L56.9 76.0 L67.8 80.0 L78.7 83.9 L89.6 87.9 L100.5 91.8 L111.4 95.8 L122.3 99.7 L133.2 103.6 L144.1 107.6 L155.0 111.5 L165.9 115.4 L176.8 119.3 L187.7 123.2 L198.6 127.1 L209.5 131.0 L220.4 134.9 L231.3 138.8 L242.2 142.7 L253.1 146.6 L264.0 150.5 L274.9 154.4 L285.8 158.2 L296.7 162.1 L307.6 166.0 L318.5 169.9 L329.4 173.8 L340.3 177.6 L351.2 181.5 L362.1 185.4 L373.0 189.3 L383.9 193.2 L394.8 197.1 L405.7 201.0 L416.6 204.9 L427.5 208.8 L438.4 212.7 L449.3 216.6 L460.2 220.5 L471.1 224.4 L482.0 228.3 L492.9 232.3 L503.8 236.2 L514.7 240.2 L525.6 244.1 L536.5 248.1 L547.4 252.1 L558.3 256.0 L569.2 260.0 L580.1 264.0 L591.0 268.1"></path><text class="end-label" x="597" y="241.3">0%</text><text class="end-label" x="597" y="256.7">50%</text><text class="end-label" x="597" y="272.1">100%</text><line class="now-line" x1="264.0" x2="264.0" y1="24" y2="320"></line><circle class="now-dot" cx="264.0" cy="150.1" r="5.5"></circle></svg>
+        <div class="tip" hidden=""></div>
+      </div>
+    </div>
+
+    <div class="fig">
+      <h3>How much water the air can hold</h3>
+      <p class="sub">Grams of water vapor per cubic meter of air. Every 20°F of warming roughly doubles the most it can hold.</p>
+      <p class="readline" id="readW"><span>At <b>60°F:</b></span><span>can hold <b>13.3 g/m³</b></span><span>holds now <b>12.9 g/m³</b></span></p>
+      <div class="legend" aria-hidden="true">
+        <span class="key"><i style="background:var(--h4)"></i>Most it can hold</span>
+        <span class="key"><i id="rhKey" style="background: color-mix(in oklab, var(--h3) 12%, var(--h4));"></i><span id="rhKeyLabel">At 97% humidity</span></span>
+        <span class="key"><i class="dot"></i>Your setting</span>
+      </div>
+      <div class="plot" id="plotWater" tabindex="0" role="slider" aria-label="Water chart. Left and right arrows change the temperature." aria-valuemin="40" aria-valuemax="90" aria-valuenow="60" aria-valuetext="60°F, density 1.215 kg/m³">
+        <svg aria-hidden="true" viewBox="0 0 446 260" width="446" height="260"><text x="32" y="12" text-anchor="end">g/m³</text><line class="grid" x1="40" x2="404" y1="178.5" y2="178.5"></line><text x="32" y="182.5" text-anchor="end">10</text><line class="grid" x1="40" x2="404" y1="127.0" y2="127.0"></line><text x="32" y="131.0" text-anchor="end">20</text><line class="grid" x1="40" x2="404" y1="75.5" y2="75.5"></line><text x="32" y="79.5" text-anchor="end">30</text><line class="grid" x1="40" x2="404" y1="24.0" y2="24.0"></line><text x="32" y="28.0" text-anchor="end">40</text><text x="40.0" y="252" text-anchor="middle">40°F</text><text x="112.8" y="252" text-anchor="middle">50°F</text><text x="185.6" y="252" text-anchor="middle">60°F</text><text x="258.4" y="252" text-anchor="middle">70°F</text><text x="331.2" y="252" text-anchor="middle">80°F</text><text x="404.0" y="252" text-anchor="middle">90°F</text><line class="axis" x1="40" x2="404" y1="230.0" y2="230.0"></line><text x="32" y="234.0" text-anchor="end">0</text><path class="band" d="M40.0 196.3 L47.3 195.0 L54.6 193.7 L61.8 192.3 L69.1 190.9 L76.4 189.5 L83.7 188.0 L91.0 186.5 L98.2 184.9 L105.5 183.3 L112.8 181.6 L120.1 179.9 L127.4 178.1 L134.6 176.2 L141.9 174.3 L149.2 172.4 L156.5 170.4 L163.8 168.3 L171.0 166.2 L178.3 163.9 L185.6 161.7 L192.9 159.3 L200.2 156.9 L207.4 154.5 L214.7 151.9 L222.0 149.3 L229.3 146.6 L236.6 143.8 L243.8 141.0 L251.1 138.0 L258.4 135.0 L265.7 131.9 L273.0 128.7 L280.2 125.4 L287.5 122.1 L294.8 118.6 L302.1 115.0 L309.4 111.4 L316.6 107.6 L323.9 103.7 L331.2 99.8 L338.5 95.7 L345.8 91.5 L353.0 87.2 L360.3 82.8 L367.6 78.3 L374.9 73.7 L382.2 68.9 L389.4 64.0 L396.7 59.0 L404.0 53.9 L404.0 230.0 L40.0 230.0 Z"></path><path class="wash2" style="fill:var(--h2);fill:color-mix(in oklab, var(--h3) 12%, var(--h4))" d="M40.0 197.3 L47.3 196.0 L54.6 194.8 L61.8 193.5 L69.1 192.1 L76.4 190.7 L83.7 189.3 L91.0 187.8 L98.2 186.3 L105.5 184.7 L112.8 183.1 L120.1 181.4 L127.4 179.6 L134.6 177.9 L141.9 176.0 L149.2 174.1 L156.5 172.2 L163.8 170.1 L171.0 168.1 L178.3 165.9 L185.6 163.7 L192.9 161.5 L200.2 159.1 L207.4 156.7 L214.7 154.3 L222.0 151.7 L229.3 149.1 L236.6 146.4 L243.8 143.6 L251.1 140.8 L258.4 137.9 L265.7 134.8 L273.0 131.7 L280.2 128.6 L287.5 125.3 L294.8 121.9 L302.1 118.5 L309.4 114.9 L316.6 111.3 L323.9 107.5 L331.2 103.7 L338.5 99.7 L345.8 95.7 L353.0 91.5 L360.3 87.2 L367.6 82.9 L374.9 78.4 L382.2 73.7 L389.4 69.0 L396.7 64.1 L404.0 59.2 L404.0 230.0 L40.0 230.0 Z"></path><path class="ln" style="stroke:var(--h2);stroke:color-mix(in oklab, var(--h3) 12%, var(--h4))" d="M40.0 197.3 L47.3 196.0 L54.6 194.8 L61.8 193.5 L69.1 192.1 L76.4 190.7 L83.7 189.3 L91.0 187.8 L98.2 186.3 L105.5 184.7 L112.8 183.1 L120.1 181.4 L127.4 179.6 L134.6 177.9 L141.9 176.0 L149.2 174.1 L156.5 172.2 L163.8 170.1 L171.0 168.1 L178.3 165.9 L185.6 163.7 L192.9 161.5 L200.2 159.1 L207.4 156.7 L214.7 154.3 L222.0 151.7 L229.3 149.1 L236.6 146.4 L243.8 143.6 L251.1 140.8 L258.4 137.9 L265.7 134.8 L273.0 131.7 L280.2 128.6 L287.5 125.3 L294.8 121.9 L302.1 118.5 L309.4 114.9 L316.6 111.3 L323.9 107.5 L331.2 103.7 L338.5 99.7 L345.8 95.7 L353.0 91.5 L360.3 87.2 L367.6 82.9 L374.9 78.4 L382.2 73.7 L389.4 69.0 L396.7 64.1 L404.0 59.2"></path><path class="ln" style="stroke:var(--h4)" d="M40.0 196.3 L47.3 195.0 L54.6 193.7 L61.8 192.3 L69.1 190.9 L76.4 189.5 L83.7 188.0 L91.0 186.5 L98.2 184.9 L105.5 183.3 L112.8 181.6 L120.1 179.9 L127.4 178.1 L134.6 176.2 L141.9 174.3 L149.2 172.4 L156.5 170.4 L163.8 168.3 L171.0 166.2 L178.3 163.9 L185.6 161.7 L192.9 159.3 L200.2 156.9 L207.4 154.5 L214.7 151.9 L222.0 149.3 L229.3 146.6 L236.6 143.8 L243.8 141.0 L251.1 138.0 L258.4 135.0 L265.7 131.9 L273.0 128.7 L280.2 125.4 L287.5 122.1 L294.8 118.6 L302.1 115.0 L309.4 111.4 L316.6 107.6 L323.9 103.7 L331.2 99.8 L338.5 95.7 L345.8 91.5 L353.0 87.2 L360.3 82.8 L367.6 78.3 L374.9 73.7 L382.2 68.9 L389.4 64.0 L396.7 59.0 L404.0 53.9"></path><circle class="pt" cx="40.0" cy="196.3" r="4"></circle><text class="pt-label halo" x="47.0" y="187.3" text-anchor="start">6.6</text><circle class="pt" cx="185.6" cy="161.7" r="4"></circle><text class="pt-label halo" x="177.6" y="154.7" text-anchor="end">13.3</text><circle class="pt" cx="331.2" cy="99.8" r="4"></circle><text class="pt-label halo" x="323.2" y="92.8" text-anchor="end">25.3</text><text class="end-label" x="410" y="57.9">34.2</text><line class="now-line" x1="185.6" x2="185.6" y1="24" y2="230.0"></line><circle class="now-dot" cx="185.6" cy="163.7" r="5.5"></circle></svg>
+        <div class="tip" hidden=""></div>
+      </div>
+      <p class="note">1 g/m³ is about 1 oz of water in a 10-foot cube of air.</p>
+    </div>
+  </section>
+
+  <section class="lower">
+    <div class="fig">
+      <h3>Density table</h3>
+      <p class="sub">Air density in kg/m³ at <span id="tableP">29.92 inHg</span>. Darker cells push harder. The ringed cell is closest to your setting.</p>
+      <div class="table-scroll">
+        <table class="dt">
+          <caption class="sr-only">Air density in kilograms per cubic meter by temperature and relative humidity, with the most water vapor the air can hold</caption>
+          <thead>
+            <tr class="grp"><th></th><th colspan="5" scope="colgroup">Relative humidity</th><th></th></tr>
+            <tr><th scope="col">Temp</th><th scope="col">0%</th><th scope="col">25%</th><th scope="col">50%</th><th scope="col">75%</th><th scope="col">100%</th><th scope="col">Can hold g/m³</th></tr>
+          </thead>
+          <tbody id="tbody"><tr><th scope="row">40°F</th><td data-t="40" data-rh="0" style="--tp: 85.8%;">1.272</td><td data-t="40" data-rh="25" style="--tp: 85.3%;">1.271</td><td data-t="40" data-rh="50" style="--tp: 84.8%;">1.270</td><td data-t="40" data-rh="75" style="--tp: 84.3%;">1.269</td><td data-t="40" data-rh="100" style="--tp: 83.8%;">1.268</td><td class="cap">6.6</td></tr><tr><th scope="row">45°F</th><td data-t="45" data-rh="0" style="--tp: 79.5%;">1.259</td><td data-t="45" data-rh="25" style="--tp: 78.9%;">1.258</td><td data-t="45" data-rh="50" style="--tp: 78.3%;">1.257</td><td data-t="45" data-rh="75" style="--tp: 77.7%;">1.255</td><td data-t="45" data-rh="100" style="--tp: 77.1%;">1.254</td><td class="cap">7.9</td></tr><tr><th scope="row">50°F</th><td data-t="50" data-rh="0" style="--tp: 73.3%;">1.247</td><td data-t="50" data-rh="25" style="--tp: 72.6%;">1.245</td><td data-t="50" data-rh="50" style="--tp: 71.9%;">1.244</td><td data-t="50" data-rh="75" style="--tp: 71.2%;">1.242</td><td data-t="50" data-rh="100" style="--tp: 70.4%;">1.241</td><td class="cap">9.4</td></tr><tr><th scope="row">55°F</th><td data-t="55" data-rh="0" style="--tp: 67.2%;">1.234</td><td data-t="55" data-rh="25" style="--tp: 66.4%;">1.233</td><td data-t="55" data-rh="50" style="--tp: 65.5%;">1.231</td><td data-t="55" data-rh="75" style="--tp: 64.7%;">1.229</td><td data-t="55" data-rh="100" style="--tp: 63.8%;">1.228</td><td class="cap">11.2</td></tr><tr><th scope="row">60°F</th><td data-t="60" data-rh="0" style="--tp: 61.3%;">1.223</td><td data-t="60" data-rh="25" style="--tp: 60.3%;">1.221</td><td data-t="60" data-rh="50" style="--tp: 59.3%;">1.219</td><td data-t="60" data-rh="75" style="--tp: 58.3%;">1.217</td><td data-t="60" data-rh="100" class="now" style="--tp: 57.3%;">1.215</td><td class="cap">13.3</td></tr><tr><th scope="row">65°F</th><td data-t="65" data-rh="0" style="--tp: 55.5%;">1.211</td><td data-t="65" data-rh="25" style="--tp: 54.3%;">1.209</td><td data-t="65" data-rh="50" style="--tp: 53.1%;">1.206</td><td data-t="65" data-rh="75" style="--tp: 51.9%;">1.204</td><td data-t="65" data-rh="100" style="--tp: 50.7%;">1.201</td><td class="cap">15.7</td></tr><tr><th scope="row">70°F</th><td data-t="70" data-rh="0" style="--tp: 49.8%;">1.200</td><td data-t="70" data-rh="25" style="--tp: 48.4%;">1.197</td><td data-t="70" data-rh="50" style="--tp: 47.0%;">1.194</td><td data-t="70" data-rh="75" style="--tp: 45.6%;">1.191</td><td data-t="70" data-rh="100" style="--tp: 44.2%;">1.188</td><td class="cap">18.4</td></tr><tr><th scope="row">75°F</th><td data-t="75" data-rh="0" style="--tp: 44.2%;">1.188</td><td data-t="75" data-rh="25" style="--tp: 42.5%;">1.185</td><td data-t="75" data-rh="50" style="--tp: 40.9%;">1.182</td><td data-t="75" data-rh="75" style="--tp: 39.2%;">1.178</td><td data-t="75" data-rh="100" style="--tp: 37.6%;">1.175</td><td class="cap">21.6</td></tr><tr><th scope="row">80°F</th><td data-t="80" data-rh="0" style="--tp: 38.7%;">1.177</td><td data-t="80" data-rh="25" style="--tp: 36.7%;">1.173</td><td data-t="80" data-rh="50" style="--tp: 34.8%;">1.170</td><td data-t="80" data-rh="75" style="--tp: 32.9%;">1.166</td><td data-t="80" data-rh="100" style="--tp: 31.0%;">1.162</td><td class="cap">25.3</td></tr><tr><th scope="row">85°F</th><td data-t="85" data-rh="0" style="--tp: 33.2%;">1.166</td><td data-t="85" data-rh="25" style="--tp: 31.0%;">1.162</td><td data-t="85" data-rh="50" style="--tp: 28.8%;">1.158</td><td data-t="85" data-rh="75" style="--tp: 26.5%;">1.153</td><td data-t="85" data-rh="100" style="--tp: 24.3%;">1.149</td><td class="cap">29.5</td></tr><tr><th scope="row">90°F</th><td data-t="90" data-rh="0" style="--tp: 27.9%;">1.156</td><td data-t="90" data-rh="25" style="--tp: 25.3%;">1.151</td><td data-t="90" data-rh="50" style="--tp: 22.7%;">1.145</td><td data-t="90" data-rh="75" style="--tp: 20.1%;">1.140</td><td data-t="90" data-rh="100" style="--tp: 17.5%;">1.135</td><td class="cap">34.2</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="method">
+      <h2>How this is worked out</h2>
+      <ul>
+        <li><strong>Density.</strong> Dry air plus water vapor from the ideal gas law, with CIPM-2007 molar masses,<a class="ref" href="#r3">3</a> and saturation vapor pressure from the IAPWS equation of Wagner and Pruß.<a class="ref" href="#r2">2</a><a class="ref" href="#r11">11</a></li>
+        <li><strong>Ridge lift.</strong> Wind into the cliff × the sine of the airflow’s slope angle, matching the FAA example and the slope-times-wind method used in soaring forecasts.<a class="ref" href="#r18">18</a><a class="ref" href="#r19">19</a></li>
+        <li><strong>Rising air.</strong> A parcel of beach air lifted up the face cools at the adiabatic rate for moist clear air (the dry rate, about 1% slower because of its water vapor) until it saturates, then at the saturated rate.<a class="ref" href="#r14">14</a><a class="ref" href="#r15">15</a><a class="ref" href="#r12">12</a> The surrounding air follows your lapse rate, with humidity changing evenly from the beach value to the cliff-top value. Buoyancy compares densities, so it counts temperature, water vapor and the weight of fog droplets.<a class="ref" href="#r13">13</a> The budget starts from temperature alone. Humidity, fog and sun can each unlock the others, so the boost they make together is shared between them by averaging over every order they could be added in (Shapley values).</li>
+        <li><strong>Upper limits.</strong> Buoyancy gains use parcel theory with no mixing.<a class="ref" href="#r20">20</a> Real rising air mixes with the air around it, which dilutes buoyancy, and climate-model studies find that stronger mixing reduces condensation heating.<a class="ref" href="#r30">30</a><a class="ref" href="#r31">31</a> When rising air ends up heavier than its surroundings, the wind still forces it up the face; the deficit only stops it rising above the top. Clear rising air can be lighter than its surroundings only when the surrounding air, counting humidity, is unstable on its own, and the page flags those setups.</li>
+        <li><strong>Stability.</strong> The Froude number U/(NH) uses the wind into the cliff, the cliff height and the stability of air riding up it.<a class="ref" href="#r21">21</a> Below 1, air under the dividing-streamline height H(1 − Fr) flows around the cliff, so ridge lift is scaled by Fr.<a class="ref" href="#r26">26</a> Above the cliff top, rising air coasts until stable air stops it.</li>
+        <li><strong>Sun.</strong> Average warming of the air riding up the face is the heat flux divided by air density × specific heat × wind into the cliff.<a class="ref" href="#r12">12</a> Thermal strength is the Deardorff velocity.<a class="ref" href="#r22">22</a></li>
+        <li><strong>Your wing.</strong> Lift and drag scale with density × speed², so true airspeed and sink both scale with √(1.225 ÷ density).<a class="ref" href="#r5">5</a> Density altitude is the standard-atmosphere height with the same density.<a class="ref" href="#r1">1</a><a class="ref" href="#r23">23</a></li>
+        <li><strong>Not included.</strong> Turbulence and rotor, wind changing with height, the wing’s full speed polar, and the cliff’s three-dimensional shape.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="benchTitle">
+    <header class="sec-head">
+      <h2 id="benchTitle">Checked against published values</h2>
+      <p class="sub">The “This tool” column is calculated live by this page, with the same code as everything above.</p>
+    </header>
+    <div class="table-scroll">
+      <table class="pt bench">
+        <caption class="sr-only">Benchmarks of this tool against published reference values</caption>
+        <thead><tr><th scope="col">Quantity</th><th scope="col" style="text-align:left">Conditions</th><th scope="col" style="text-align:left">Published</th><th scope="col">This tool</th><th scope="col">Difference</th><th scope="col">Source</th></tr></thead>
+        <tbody id="benchBody"><tr><th scope="row">Standard air density</th><td class="l">59°F (15°C), dry, 101.325 kPa</td><td class="l">1.2250 kg/m³</td><td class="you">1.2250 kg/m³</td><td class="diff">0.00%</td><td><a href="#r1">[1]</a></td></tr><tr><th scope="row">Saturation vapor pressure</th><td class="l">68°F (20°C)</td><td class="l">2.3393 kPa</td><td class="you">2.3392 kPa</td><td class="diff">0.00%</td><td><a href="#r2">[2]</a></td></tr><tr><th scope="row">Moist air density</th><td class="l">59°F, 50% RH, 101.325 kPa</td><td class="l">1.2216 kg/m³ (CIPM-2007 formula, computed)</td><td class="you">1.2211 kg/m³</td><td class="diff">−0.04%</td><td><a href="#r3">[3]</a></td></tr><tr><th scope="row">Heat to evaporate water</th><td class="l">59°F (15°C)</td><td class="l">2465.3 kJ/kg</td><td class="you">2466.1 kJ/kg</td><td class="diff">+0.03%</td><td><a href="#r2">[2]</a></td></tr><tr><th scope="row">Wind pressure, ½ρv²</th><td class="l">20 mph, standard air</td><td class="l">1.024 lbf/ft² (0.00256 × 20²)</td><td class="you">1.0226 lbf/ft²</td><td class="diff">−0.14%</td><td><a href="#r4">[4]</a></td></tr><tr><th scope="row">Dry adiabatic lapse rate</th><td class="l">g ÷ specific heat of dry air</td><td class="l">about 9.8°C/km</td><td class="you">9.75°C/km</td><td class="diff">−0.53%</td><td><a href="#r14">[14]</a></td></tr><tr><th scope="row">Dry adiabatic lapse rate</th><td class="l">per 1,000 ft, as pilots use it</td><td class="l">3°C (5.4°F) per 1,000 ft</td><td class="you">2.97°C (5.35°F)</td><td class="diff">−0.96%</td><td><a href="#r32">[32]</a></td></tr><tr><th scope="row">Saturated adiabatic lapse rate</th><td class="l">60°F, 29.92 inHg, per 1,000 ft</td><td class="l">1.1–2.8°C (2–5°F) per 1,000 ft</td><td class="you">1.44°C (2.60°F)</td><td class="diff">in range</td><td><a href="#r32">[32]</a></td></tr><tr><th scope="row">Saturated adiabatic lapse rate</th><td class="l">59°F (15°C), 1013 hPa</td><td class="l">typically about 5°C/km; range 3.6–9.2</td><td class="you">4.79°C/km</td><td class="diff">in range</td><td><a href="#r16">[16]</a></td></tr><tr><th scope="row">Saturated adiabatic lapse rate</th><td class="l">41°F (5°C), 1000 hPa</td><td class="l">about 6°C/km, the usual lower-air value</td><td class="you">5.87°C/km</td><td class="diff">−2.2%</td><td><a href="#r27">[27]</a></td></tr><tr><th scope="row">Stability class</th><td class="l">lapse rate 4, 9 and 11°C/km</td><td class="l">absolutely stable, conditionally unstable, absolutely unstable</td><td class="you">Stable, Conditionally unstable, Unstable</td><td class="diff">match</td><td><a href="#r27">[27]</a></td></tr><tr><th scope="row">Humid air is lighter</th><td class="l">68°F (20°C), 10 g/kg of vapor</td><td class="l">+1.79 K virtual warming (T × 0.61r, computed)</td><td class="you">+1.76 K</td><td class="diff">−1.3%</td><td><a href="#r13">[13]</a></td></tr><tr><th scope="row">Fog or cloud base</th><td class="l">60°F, dew point 50°F</td><td class="l">2,273 ft ((T − Td) ÷ 4.4 × 1,000)</td><td class="you">2,303 ft</td><td class="diff">+1.3%</td><td><a href="#r17">[17]</a></td></tr><tr><th scope="row">Ridge lift</th><td class="l">15 kn into a 1:4 slope</td><td class="l">about 6 ft/s</td><td class="you">6.14 ft/s</td><td class="diff">+2.3%</td><td><a href="#r18">[18]</a></td></tr><tr><th scope="row">Density altitude</th><td class="l">90°F, 29.92 inHg, dry</td><td class="l">1,988 ft (NWS formula, computed)</td><td class="you">1,972 ft</td><td class="diff">−16 ft</td><td><a href="#r23">[23]</a></td></tr><tr><th scope="row">Thermal strength (Deardorff)</th><td class="l">150 W/m², 1,200 ft mixed layer</td><td class="l">on the order of 1 m/s</td><td class="you">1.16 m/s</td><td class="diff">same order</td><td><a href="#r22">[22]</a></td></tr></tbody>
+      </table>
+    </div>
+    <h3>References</h3>
+    <ol class="refs">
+      <li id="r1">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Standard_atmosphere" target="_blank" rel="noopener">Glossary of Meteorology: Standard atmosphere</a> (U.S. Standard Atmosphere, 1976).</li>
+      <li id="r2">NIST Chemistry WebBook, SRD 69, <a href="https://webbook.nist.gov/chemistry/fluid/" target="_blank" rel="noopener">Thermophysical properties of fluid systems: water</a>, from IAPWS-95 (Wagner and Pruß, J. Phys. Chem. Ref. Data 31, 387, 2002).</li>
+      <li id="r3">Picard, Davis, Gläser and Fujii, <a href="https://www.nist.gov/sites/default/files/documents/calibrations/CIPM-2007.pdf" target="_blank" rel="noopener">Revised formula for the density of moist air (CIPM-2007)</a>, Metrologia 45, 149–155 (2008).</li>
+      <li id="r4">ASCE 7 velocity pressure, q = 0.00256 K V² (lbf/ft², V in mph), as summarized by the International Code Council: <a href="https://iccsafe.org/wp-content/uploads/Ever-changing-Structural-Provisions-of-our-Building-Codes-Wind.pdf" target="_blank" rel="noopener">Ever-changing structural provisions: wind</a>.</li>
+      <li id="r5">NASA Glenn Research Center, <a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/density-effects" target="_blank" rel="noopener">Density effects</a>: dynamic pressure is ½ × density × velocity², and lift and drag scale with density.</li>
+      <li id="r6">NASA Glenn Research Center, <a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/shape-effects-on-drag/" target="_blank" rel="noopener">Shape effects on drag</a>: flat plate drag coefficient 1.28.</li>
+      <li id="r7">NASA Glenn Research Center, <a href="https://www.grc.nasa.gov/WWW/K-12/BGP/newton2.html" target="_blank" rel="noopener">Newton’s second law of motion</a>: force equals the change in momentum per unit time.</li>
+      <li id="r8">ITU-R Recommendation P.840-5, <a href="https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.840-5-201202-S!!PDF-E.pdf" target="_blank" rel="noopener">Attenuation due to clouds and fog</a> (2012): fog liquid water about 0.05 g/m³ (medium) and 0.5 g/m³ (thick).</li>
+      <li id="r9">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Wet-bulb_temperature" target="_blank" rel="noopener">Glossary of Meteorology: Wet-bulb temperature</a>.</li>
+      <li id="r10">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Latent_heat" target="_blank" rel="noopener">Glossary of Meteorology: Latent heat</a>.</li>
+      <li id="r11">H. Vömel, <a href="https://www.eol.ucar.edu/data-software/conventions-and-standards/water-vapor-pressure-formulations" target="_blank" rel="noopener">Saturation vapor pressure formulations</a>, NCAR/UCAR Earth Observing Laboratory (Wagner and Pruß; Buck 1981 and 1996).</li>
+      <li id="r12">The Engineering ToolBox, <a href="https://www.engineeringtoolbox.com/enthalpy-moist-air-d_683.html" target="_blank" rel="noopener">Moist air: enthalpy</a> (specific heats of dry air and vapor, heat of evaporation at 32°F).</li>
+      <li id="r13">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Virtual_temperature" target="_blank" rel="noopener">Glossary of Meteorology: Virtual temperature</a>.</li>
+      <li id="r14">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Dry-adiabatic_lapse_rate" target="_blank" rel="noopener">Glossary of Meteorology: Dry-adiabatic lapse rate</a> (g/c<sub>p</sub>, about 9.8°C/km).</li>
+      <li id="r15">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Moist-adiabatic_lapse_rate" target="_blank" rel="noopener">Glossary of Meteorology: Moist-adiabatic lapse rate</a>.</li>
+      <li id="r16">Wikipedia, <a href="https://en.wikipedia.org/wiki/Lapse_rate" target="_blank" rel="noopener">Lapse rate</a>: saturated adiabatic rate typically about 5°C/km, ranging 3.6–9.2°C/km (ICAO).</li>
+      <li id="r17">NASA Glenn Research Center, Aeronautics education, <a href="https://www.grc.nasa.gov/www/k-12/Aero2000/studweb/1-2-2i.html" target="_blank" rel="noopener">Cloud base estimate</a>: (temperature − dew point) ÷ 4.4 × 1,000 ft.</li>
+      <li id="r18">FAA, <a href="https://aviationweather.ws/098_Ridge_or_Hill_Soaring.php" target="_blank" rel="noopener">Aviation Weather (AC 00-6A): Ridge or hill soaring</a>.</li>
+      <li id="r19">O. Liechti, <a href="https://ts.journals.publicknowledgeproject.org/index.php/ts/article/download/37/33/135" target="_blank" rel="noopener">Regionalized predictions of aligned updrafts</a>, Technical Soaring 34(4), 2010.</li>
+      <li id="r20">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Convective_available_potential_energy" target="_blank" rel="noopener">Glossary of Meteorology: Convective available potential energy</a>.</li>
+      <li id="r21">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Froude_number" target="_blank" rel="noopener">Glossary of Meteorology: Froude number</a>.</li>
+      <li id="r22">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Deardorff_velocity" target="_blank" rel="noopener">Glossary of Meteorology: Deardorff velocity</a> (typically about 1 m/s).</li>
+      <li id="r23">National Weather Service, <a href="https://www.weather.gov/media/epz/wxcalc/densityAltitude.pdf" target="_blank" rel="noopener">Density altitude formula</a>.</li>
+      <li id="r24">Woods Hole Oceanographic Institution, Martha’s Vineyard Coastal Observatory, <a href="https://www.whoi.edu/science/AOPE/mvco/description/SolRad.html" target="_blank" rel="noopener">Solar radiation</a>: about 1,000 W/m² at the surface at clear-sky noon.</li>
+      <li id="r25">NOAA National Data Buoy Center, <a href="https://www.ndbc.noaa.gov/education/seabreeze.shtml" target="_blank" rel="noopener">What are sea breezes and why do they occur?</a></li>
+      <li id="r26">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Dividing_streamline" target="_blank" rel="noopener">Glossary of Meteorology: Dividing streamline</a> (H<sub>c</sub> = H(1 − Fr)).</li>
+      <li id="r27">A. F. Hassoon, <a href="https://uomustansiriyah.edu.iq/media/lectures/6/6_2018_02_13!09_59_22_AM.pdf" target="_blank" rel="noopener">Atmospheric stability</a>, boundary-layer lecture notes, Mustansiriyah University: dry rate 10°C per 1,000 m, moist rate about 6°C per 1,000 m on average, conditional instability between them.</li>
+      <li id="r28">National Weather Service aviation training, <a href="https://www.weather.gov/media/aviation/afp/stability_clouds.pdf" target="_blank" rel="noopener">Stability and cloud development</a>: dry 10°C/km, moist about 6°C/km, latent heat release slows the cooling of saturated air.</li>
+      <li id="r29">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Conditional_instability" target="_blank" rel="noopener">Glossary of Meteorology: Conditional instability</a>.</li>
+      <li id="r30">American Meteorological Society, <a href="https://glossary.ametsoc.org/wiki/Entrainment" target="_blank" rel="noopener">Glossary of Meteorology: Entrainment</a>.</li>
+      <li id="r31">Keil, Schmidt, Stevens and Bao, Variations of tropical lapse rates in climate models and their implications for upper tropospheric warming, Journal of Climate (2021); <a href="https://mpimet.mpg.de/en/communication/news/variations-of-tropical-lapse-rates-in-climate-models-and-their-implications-for-upper-tropospheric-warming" target="_blank" rel="noopener">summary by the Max Planck Institute for Meteorology</a>.</li>
+      <li id="r32">FAA, <a href="https://www.faa.gov/sites/faa.gov/files/14_phak_ch12.pdf" target="_blank" rel="noopener">Pilot’s Handbook of Aeronautical Knowledge, Chapter 12: Weather theory</a>: dry rate 3°C (5.4°F) per 1,000 ft; moist rate 1.1–2.8°C (2–5°F) per 1,000 ft; moist air is generally less stable than dry air.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+
+/* ---------- constants (sources in the References list) ---------- */
+const R = 8.314472, MA = 28.96546e-3, MV = 18.01528e-3;   // CIPM-2007 [3]
+const RD = R / MA, RV = R / MV, EPS = RD / RV;              // J/(kg·K)
+const G = 9.80665;
+const P_STD = 101325, T_STD = 288.15;                       // [1]
+const RHO_STD = P_STD / (RD * T_STD);                       // 1.2250 kg/m³
+const PA_PER_INHG = 3386.389, FT = 0.3048, MS_FPM = 196.8504;
+const KN_MS = 0.514444, KN_MPH = 1.150779;
+const PA_PSF = 0.0208854;
+const CD_PLATE = 1.28;                                      // [6]
+const CPA = 1006, CPV = 1860, L0 = 2.501e6, CW = 4186;      // [12]
+const SUN_FULL = 1000;                                      // W/m² [24]
+const ZMAX_FT = 3000;
+const D_MIN = 1.10, D_MAX = 1.30;
+const LEVELS = [0, 25, 50, 75, 100];
+
+/* ---------- physics ---------- */
+function esPa(tc){ // saturation vapor pressure over water, Pa
+  if (tc < 0.01) return 611.21 * Math.exp((18.678 - tc / 234.5) * (tc / (257.14 + tc)));   // Buck 1996 [11]
+  const T = tc + 273.15, v = 1 - T / 647.096;                                                 // Wagner & Pruß [2][11]
+  return 22.064e6 * Math.exp(647.096 / T * (-7.85951783 * v + 1.84408259 * Math.pow(v, 1.5) - 11.7866497 * Math.pow(v, 3)
+    + 22.6807411 * Math.pow(v, 3.5) - 15.9618719 * Math.pow(v, 4) + 1.80122502 * Math.pow(v, 7.5)));
+}
+function airAt(tc, rh, p){
+  const tk = tc + 273.15, es = esPa(tc), e = rh / 100 * es;
+  const rho = (p - e) / (RD * tk) + e / (RV * tk);
+  const tv = tk / (1 - (e / p) * (1 - EPS));                // virtual temperature [13]
+  return { tc, tk, p, e, es, rho, rhoDry: p / (RD * tk), cap: es / (RV * tk) * 1000, water: e / (RV * tk) * 1000, warmF: (tv - tk) * 1.8 };
+}
+const air = (tf, rh, inhg) => airAt((tf - 32) / 1.8, rh, inhg * PA_PER_INHG);
+function cipm2007(tc, h, p){ // reference formula [3], x_CO2 = 0.0004
+  const T = tc + 273.15;
+  const psv = Math.exp(1.2378847e-5 * T * T - 1.9121316e-2 * T + 33.93711047 - 6.3431645e3 / T);
+  const f = 1.00062 + 3.14e-8 * p + 5.6e-7 * tc * tc, xv = h * f * psv / p;
+  const Z = 1 - (p / T) * (1.58123e-6 - 2.9331e-8 * tc + 1.1043e-10 * tc * tc + (5.707e-6 - 2.051e-8 * tc) * xv
+    + (1.9898e-4 - 2.376e-6 * tc) * xv * xv) + (p * p / (T * T)) * (1.83e-11 - 0.765e-8 * xv * xv);
+  return p * MA / (Z * R * T) * (1 - xv * (1 - MV / MA));
+}
+function dewPointF(e){
+  if (e <= 0) return null;
+  let lo = -80, hi = 60;
+  for (let i = 0; i < 50; i++){ const mid = (lo + hi) / 2; if (esPa(mid) < e) lo = mid; else hi = mid; }
+  return (lo + hi) / 2 * 1.8 + 32;
+}
+const latentHeat = tc => L0 + (CPV - CW) * tc;                     // J/kg
+const rsat = (tc, p) => { const es = esPa(tc); return EPS * es / (p - es); };
+function gammaS(tc, p){ // saturated adiabatic lapse rate, K/m [15]
+  const T = tc + 273.15, r = rsat(tc, p), L = latentHeat(tc);
+  return G * (1 + L * r / (RD * T)) / (CPA + L * L * r * EPS / (RD * T * T));
+}
+const GAMMA_D = G / CPA;                                             // K/m [14]
+const qPa = (rho, kn) => 0.5 * rho * Math.pow(kn * KN_MS, 2);        // Pa = J/m³ [5]
+const daFt = rho => (1 - Math.pow(rho / RHO_STD, 0.234969)) / 6.8756e-6;   // standard-atmosphere height with this density [1]
+const nwsDA = (tF, inHg, rh) => { const tc = (tF - 32) / 1.8, P = inHg * PA_PER_INHG, e = rh / 100 * esPa(tc);
+  const Tv = (tc + 273.15) / (1 - (e / P) * (1 - 0.622)); return 145366 * (1 - Math.pow(17.326 * inHg / (Tv * 1.8), 0.235)); };   // [23]
+
+/* Beach air lifted up the cliff and beyond: moist clear-air adiabat until saturated (fog), then saturated adiabat.
+   The surrounding air follows the lapse rate, with humidity changing evenly from the beach to the cliff-top value.
+   o.virt = false compares temperatures only; otherwise buoyancy compares densities (vapor and droplets included). */
+function parcel(o){
+  const T0 = (o.tF - 32) / 1.8, p0 = o.inHg * PA_PER_INHG, e0 = o.rh / 100 * esPa(T0), r0 = EPS * e0 / (p0 - e0);
+  const H = o.cliffFt * FT, zInv = o.invFt == null ? Infinity : o.invFt * FT, zMax = ZMAX_FT * FT;
+  const gE = o.lapseF * (5 / 9) / (1000 * FT), gI = (o.invF || 0) * (5 / 9) / (1000 * FT);
+  const Tenv = z => z < zInv ? T0 - gE * z : T0 - gE * zInv + gI * (z - zInv);
+  const pH = p0 * Math.exp(-G * H / (RD * ((T0 + Tenv(H)) / 2 + 273.15)));
+  const eTop = o.rhTop / 100 * esPa(Tenv(H)), rTop = EPS * eTop / (pH - eTop);
+  const renv = (z, Te, p) => Math.min(z < H ? r0 + (rTop - r0) * z / H : rTop, rsat(Te, p));
+  const condense = o.condense !== false, virt = o.virt !== false;
+  const dens = (T, rv, rlq) => virt ? (T + 273.15) * (1 + rv / EPS) / (1 + rv + rlq) : T + 273.15;   // density temperature [13]
+  let z = 0, p = p0, Tp = T0, r = r0, rl = 0, E = 0, Tdry = T0, sat = condense && r0 >= rsat(T0, p0) * 0.99999;
+  let fogBase = sat ? 0 : null, EH = null, rlH = 0, TpH = T0, TeH = T0, TdH = T0, rhoTop = null, bH = 0, reH = r0, rH = r0;
+  const pts = [{ z: 0, Te: T0, Tp: T0, Td: T0, E: 0, b: 0, sat }];
+  while (z < zMax - 1e-9){
+    const Te = Tenv(z), re = renv(z, Te, p), Tve = (Te + 273.15) * (1 + re / EPS) / (1 + re);
+    const pn = p * Math.exp(-G / (RD * Tve));
+    const heat = z < H ? o.dTsun / H : 0;
+    if (!sat){
+      Tp += -G * (1 + r) / (CPA + r * CPV) + heat;            // clear moist air [14][12]
+      if (condense && r >= rsat(Tp, pn)){ sat = true; fogBase = z + 1; }
+    } else {
+      Tp += -gammaS(Tp, p) + heat;                              // saturated [15]
+      const rn = rsat(Tp, pn); if (rn < r){ rl += r - rn; r = rn; }
+    }
+    Tdry += -G * (1 + r0) / (CPA + r0 * CPV) + heat;
+    z += 1; p = pn;
+    const TeN = Tenv(z), reN = renv(z, TeN, p);
+    const Tre = dens(TeN, reN, 0), b = G * (dens(Tp, r, rl) - Tre) / Tre;
+    E += b;
+    if (EH === null && z >= H - 1e-9){
+      EH = E; rlH = rl; TpH = Tp; TeH = TeN; TdH = Tdry; bH = b; reH = reN; rH = r;
+      rhoTop = p / (RD * (TeN + 273.15) * (1 + reN / EPS) / (1 + reN));
+    }
+    if (z % 10 === 0) pts.push({ z, Te: TeN, Tp, Td: Tdry, E, b, sat });
+    if (o.topOnly && EH !== null) break;
+  }
+  return { T0, p0, pH, r0, rTop, H, fogBase, EH, rlH, TpH, TeH, TdH, bH, reH, rH, rhoTop, pts, Tenv };
+}
+
+function liftModel(){
+  const a0 = air(S.t, S.rh, S.p);
+  const uIn = S.wind * KN_MS * Math.cos(S.ang * Math.PI / 180);         // m/s into the cliff
+  const wr = uIn * S.slope / Math.sqrt(1 + S.slope * S.slope);         // ridge lift [18][19]
+  const dTsun = S.sun / (a0.rho * CPA * Math.max(uIn, 0.3));           // K, average warming up the face
+  const base = { tF: S.t, rh: S.rh, rhTop: S.rhTop, inHg: S.p, cliffFt: S.cliff, lapseF: S.lapse, invFt: S.invOn ? S.invBase : null, invF: S.invStr };
+  // Parcels with each effect on or off: vapor counted in buoyancy (v), condensation (k), sun (s)
+  const run = (v, k, sn, full) => parcel(Object.assign({}, base, { virt: v, condense: k, dTsun: sn ? dTsun : 0, topOnly: !full }));
+  const A = run(false, false, false), B = run(true, false, false);
+  const C = run(true, true, false, true), D = run(true, true, true, true);             // C: no sun; D: the full picture
+  const Pk = run(false, true, false), Ps = run(false, false, true), Pvs = run(true, false, true), Pks = run(false, true, true);
+  // Bulk stability of air riding up the cliff, from its buoyancy energy at the top; blocking below Froude 1 [21][26]
+  const N2 = -2 * C.EH / (C.H * C.H);
+  const Fr = N2 > 0 ? uIn / (Math.sqrt(N2) * C.H) : Infinity;
+  const block = Math.min(1, Fr), wm = wr * block;
+  // Positive buoyancy adds to the forced lift (parcel theory, upper limit) [20]; negative buoyancy only limits how high it reaches.
+  const wt = E => Math.sqrt(wm * wm + 2 * Math.max(0, E));
+  const wA = wt(A.EH), wB = wt(B.EH), wC = wt(C.EH), wD = wt(D.EH);
+  // Humidity, fog and sun can each unlock the others, so share the boost above temperature alone by averaging
+  // over every order they could be added in (Shapley values). The three shares add up to wD − wA.
+  const u = { '': wA, v: wB, k: wt(Pk.EH), s: wt(Ps.EH), vk: wC, vs: wt(Pvs.EH), ks: wt(Pks.EH), vks: wD };
+  const share = (i, j, l) => { const key = x => x.split('').sort((a, b) => 'vks'.indexOf(a) - 'vks'.indexOf(b)).join('');
+    return (u[i] - u['']) / 3 + (u[key(i + j)] - u[j]) / 6 + (u[key(i + l)] - u[l]) / 6 + (u.vks - u[key(j + l)]) / 3; };
+  const gV = share('v', 'k', 's'), gK = share('k', 'v', 's'), gS = share('s', 'v', 'k');
+  let zStop = null;
+  if (wD <= 0) zStop = D.H;
+  else for (const q of D.pts){ if (q.z > D.H && 0.5 * wD * wD + (q.E - D.EH) <= 0){ zStop = q.z; break; } }
+  const sinkTop = S.sink * Math.sqrt(RHO_STD / D.rhoTop);               // [5]
+  const zi = (S.invOn ? S.invBase : ZMAX_FT) * FT;
+  const wstar = S.sun > 0 ? Math.cbrt(G / (a0.tk) * (S.sun / (a0.rho * CPA)) * zi) : 0;   // [22]
+  return { a0, uIn, wr, wm, block, dTsun, A, B, C, D, wA, wB, wC, wD, gV, gK, gS, zStop, N2, Fr, sinkTop, zi, wstar, net: wD - sinkTop, base: wm - sinkTop };
+}
+
+function fogEvaporates(a, lwc){ // lwc in g/m³ evaporating into air a; adiabatic, isobaric [9][12]
+  const p = a.p, T = a.tc;
+  const W = EPS * a.e / (p - a.e), rhoD = (p - a.e) / (RD * a.tk), Lw = lwc / 1000 / rhoD;
+  const H0 = CPA * T + W * (L0 + CPV * T) + Lw * CW * T;
+  const tAfter = Wn => (H0 - Wn * L0) / (CPA + Wn * CPV + (Lw - (Wn - W)) * CW);
+  const Wsat = t => { const es = esPa(t); return EPS * es / (p - es); };
+  let Wn = W + Lw, T2 = tAfter(Wn), limited = false;
+  if (Lw > 0 && Wn > Wsat(T2)){
+    limited = true;
+    let lo = W, hi = W + Lw;
+    for (let i = 0; i < 60; i++){ const mid = (lo + hi) / 2; if (mid - Wsat(tAfter(mid)) > 0) hi = mid; else lo = mid; }
+    Wn = (lo + hi) / 2; T2 = tAfter(Wn);
+  }
+  const e2 = Wn * p / (EPS + Wn), tk2 = T2 + 273.15, rhoD2 = (p - e2) / (RD * tk2);
+  const left = Math.max(0, (Lw - (Wn - W)) * rhoD2 * 1000);
+  const before = a.rho + lwc / 1000, after = rhoD2 + e2 / (RV * tk2) + left / 1000;
+  return { evap: (Wn - W) * rhoD * 1000, left, heat: (Wn - W) * rhoD * latentHeat(T), t2: T2, rh2: Math.min(100, e2 / esPa(T2) * 100), before, after, limited };
+}
+
+/* ---------- formatting ---------- */
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const fmtPct = v => (Math.abs(v) < 0.995 ? v.toFixed(2) : v.toFixed(1)) + '%';
+const sgnPct = v => Math.abs(v) < 0.005 ? '0.00%' : (v > 0 ? '+' : '−') + fmtPct(Math.abs(v));
+const fmtF = c => (c * 1.8 + 32).toFixed(1) + '°F';
+const fmtFt = f => Math.round(f).toLocaleString('en-US');
+const sgn = (v, d) => (v < 0 && Math.abs(v) >= 0.5 * Math.pow(10, -d) ? '−' : '+') + Math.abs(v).toFixed(d);
+const fpm = ms => Math.round(ms * MS_FPM);
+const sgnFpm = ms => { const v = fpm(ms); return (v < 0 ? '−' : '+') + Math.abs(v).toLocaleString('en-US'); };
+const fmtN = v => v < 100 ? v.toFixed(1) : Math.round(v).toString();
+const ratio = s => { const r = 1 / s; return '1:' + (Math.abs(r - Math.round(r)) < 0.05 ? Math.round(r) : r.toFixed(1)); };
+
+/* ---------- state ---------- */
+const KEY = 'sea-cliff-lift:v2';
+const DEFAULTS = { t: 60, rh: 97, rhTop: 85, p: 29.92, sun: 150, wind: 10, ang: 0, cliff: 600, slope: 0.25, lapse: 4, invOn: true, invBase: 1200, invStr: 10, sink: 1, lwc: 0.2 };
+const LIMITS = { t: [40, 90], rh: [0, 100], rhTop: [10, 100], p: [29.3, 30.5], sun: [0, 600], wind: [2, 40], ang: [0, 60], cliff: [300, 800], slope: [0.1, 1], lapse: [-8, 8], invBase: [200, 3000], invStr: [1, 30], sink: [0.4, 1.5], lwc: [0, 0.5] };
+const PRESETS = {
+  fog:    { t: 60, rh: 97, rhTop: 85,  p: 29.92, sun: 150, wind: 10, ang: 0,  lapse: 4,   invOn: true,  invBase: 1200, invStr: 10 },
+  bank:   { t: 58, rh: 100, rhTop: 100, p: 29.92, sun: 40, wind: 10, ang: 0,  lapse: 2.6, invOn: true,  invBase: 1400, invStr: 8 },
+  sunny:  { t: 66, rh: 75, rhTop: 60,  p: 29.95, sun: 300, wind: 10, ang: 0,  lapse: 5.4, invOn: false, invBase: 1600, invStr: 8 },
+  lid:    { t: 62, rh: 85, rhTop: 80,  p: 29.92, sun: 100, wind: 10, ang: 0,  lapse: 3,   invOn: true,  invBase: 700,  invStr: 15 },
+  stable: { t: 58, rh: 90, rhTop: 95,  p: 30.05, sun: 50,  wind: 7,  ang: 15, lapse: 0,   invOn: true,  invBase: 600,  invStr: 10 }
+};
+const S = (() => {
+  const s = Object.assign({}, DEFAULTS);
+  try {
+    const v = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (v){
+      for (const k of Object.keys(LIMITS)) if (typeof v[k] === 'number' && isFinite(v[k])) s[k] = clamp(v[k], LIMITS[k][0], LIMITS[k][1]);
+      if (typeof v.invOn === 'boolean') s.invOn = v.invOn;
+    }
+  } catch (e) {}
+  return s;
+})();
+let saveTimer = 0;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }, 300);
+}
+
+/* ---------- inputs ---------- */
+const SLIDERS = ['temp:t', 'rh:rh', 'rhTop:rhTop', 'baro:p', 'sun:sun', 'wind:wind', 'ang:ang', 'cliff:cliff', 'slope:slope', 'lapse:lapse', 'invBase:invBase', 'invStr:invStr', 'sink:sink', 'lwc:lwc']
+  .map(s => { const [id, key] = s.split(':'); return { el: $(id), key }; });
+const invOn = $('invOn');
+const airChips = Array.from(document.querySelectorAll('.chip[data-preset]'));
+const fogChips = Array.from(document.querySelectorAll('.fogchip'));
+function setPct(el){ el.style.setProperty('--pct', ((el.value - el.min) / (el.max - el.min) * 100) + '%'); }
+function syncInputs(){
+  SLIDERS.forEach(({ el, key }) => { el.value = S[key]; setPct(el); });
+  invOn.checked = S.invOn;
+}
+SLIDERS.forEach(({ el, key }) => el.addEventListener('input', () => {
+  let v = +el.value;
+  if (key === 'p') v = Math.round(v * 100) / 100;
+  if (key === 'lapse' || key === 'slope') v = Math.round(v * 100) / 100;
+  if (key === 'lwc' || key === 'sink') v = Math.round(v * 100) / 100;
+  S[key] = v; setPct(el); update();
+}));
+invOn.addEventListener('change', () => { S.invOn = invOn.checked; update(); });
+airChips.forEach(b => b.addEventListener('click', () => { Object.assign(S, PRESETS[b.dataset.preset]); syncInputs(); update(); }));
+fogChips.forEach(b => b.addEventListener('click', () => { S.lwc = +b.dataset.lwc; syncInputs(); update(); }));
+function setTemp(t){
+  t = clamp(Math.round(t), 40, 90);
+  if (t === S.t) return;
+  S.t = t; $('temp').value = t; setPct($('temp')); update();
+}
+
+/* ---------- dial ---------- */
+const DCX = 160, DCY = 156, DR = 112;
+function buildDial(){
+  const ang = v => Math.PI * (1 - (v - D_MIN) / (D_MAX - D_MIN));
+  const pt = (v, r) => [DCX + r * Math.cos(ang(v)), DCY - r * Math.sin(ang(v))];
+  const f = n => n.toFixed(1);
+  let s = '<defs><linearGradient id="dialGrad" gradientUnits="userSpaceOnUse" x1="' + (DCX - DR) + '" y1="0" x2="' + (DCX + DR) + '" y2="0">'
+        + '<stop offset="0" style="stop-color:var(--den-lo)"/><stop offset="1" style="stop-color:var(--den-hi)"/></linearGradient></defs>';
+  s += '<path class="axis" d="M' + (DCX - DR + 9) + ' ' + DCY + ' A' + (DR - 9) + ' ' + (DR - 9) + ' 0 0 1 ' + (DCX + DR - 9) + ' ' + DCY + '"/>';
+  s += '<path class="track" stroke="url(#dialGrad)" d="M' + (DCX - DR) + ' ' + DCY + ' A' + DR + ' ' + DR + ' 0 0 1 ' + (DCX + DR) + ' ' + DCY + '"/>';
+  for (let i = 0; i <= 20; i++){
+    const v = D_MIN + i * 0.01, major = i % 5 === 0;
+    const [x1, y1] = pt(v, DR + 11), [x2, y2] = pt(v, DR + (major ? 20 : 15));
+    s += '<line class="tk' + (major ? ' major' : '') + '" x1="' + f(x1) + '" y1="' + f(y1) + '" x2="' + f(x2) + '" y2="' + f(y2) + '"/>';
+    if (major){ const [lx, ly] = pt(v, DR + 33); s += '<text x="' + f(lx) + '" y="' + f(ly + 4) + '" text-anchor="middle">' + v.toFixed(2) + '</text>'; }
+  }
+  const [n1x, n1y] = pt(RHO_STD, DR - 9), [n2x, n2y] = pt(RHO_STD, DR + 9), [slx, sly] = pt(RHO_STD, DR + 34);
+  const notch = '" x1="' + f(n1x) + '" y1="' + f(n1y) + '" x2="' + f(n2x) + '" y2="' + f(n2y) + '"/>';
+  s += '<line class="std-halo' + notch + '<line class="std' + notch;
+  const a0 = ang(RHO_STD), tri = [[DR + 11, 0], [DR + 21, 0.035], [DR + 21, -0.035]]
+    .map(([r, da]) => f(DCX + r * Math.cos(a0 + da)) + ',' + f(DCY - r * Math.sin(a0 + da))).join(' ');
+  s += '<polygon class="std-mark" points="' + tri + '"/>';
+  s += '<text class="std-label" x="' + f(slx) + '" y="' + f(sly + 4) + '" text-anchor="middle">Standard</text>';
+  s += '<text class="end" x="' + (DCX - DR) + '" y="' + (DCY + 24) + '" text-anchor="middle">SOFT</text>';
+  s += '<text class="end" x="' + (DCX + DR) + '" y="' + (DCY + 24) + '" text-anchor="middle">PUNCHY</text>';
+  s += '<text x="' + DCX + '" y="' + (DCY + 34) + '" text-anchor="middle">kg/m³</text>';
+  s += '<g class="needle" id="needle"><line x1="' + (DCX + 16) + '" y1="' + DCY + '" x2="' + (DCX - DR + 18) + '" y2="' + DCY + '"/><circle cx="' + DCX + '" cy="' + DCY + '" r="8"/></g>';
+  const dial = $('dial'), title = dial.querySelector('title');
+  dial.innerHTML = s; dial.insertBefore(title, dial.firstChild);
+}
+function setNeedle(rho){ $('needle').style.transform = 'rotate(' + (clamp((rho - D_MIN) / (D_MAX - D_MIN), 0, 1) * 180).toFixed(2) + 'deg)'; }
+
+/* ---------- chart helpers ---------- */
+const f1 = n => n.toFixed(1);
+function frame(plot, phoneH, deskH){
+  const W = Math.max(260, Math.floor(plot.getBoundingClientRect().width));
+  return { W, H: W < 520 ? phoneH : deskH };
+}
+function rhColor(rh){
+  const idx = clamp(rh, 0, 100) / 25, i = Math.min(3, Math.floor(idx)), fr = idx - i;
+  return 'color-mix(in oklab, var(--h' + i + ') ' + ((1 - fr) * 100).toFixed(0) + '%, var(--h' + (i + 1) + '))';
+}
+function setSvg(svg, W, H, s){
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.innerHTML = s;
+}
+function showTip(o, xPx, W, title, rows, preferLeft, yPx){
+  const tip = o.tip, plot = o.plot;
+  tip.textContent = '';
+  const tt = document.createElement('div'); tt.className = 'tt'; tt.textContent = title; tip.appendChild(tt);
+  rows.forEach(r => {
+    const row = document.createElement('div'); row.className = 'row';
+    const k = document.createElement('i'); k.style.background = r.fallback || r.color; k.style.background = r.color;
+    const b = document.createElement('b'); b.textContent = r.value;
+    const l = document.createElement('span'); l.textContent = r.label;
+    row.append(k, b, l); tip.appendChild(row);
+  });
+  tip.hidden = false;
+  const pw = plot.clientWidth, px = xPx * (pw / W), tw = tip.offsetWidth;
+  const rightOk = px + 14 + tw <= pw, leftOk = px - 14 - tw >= 0;
+  let left, low = false;
+  if (preferLeft){ left = leftOk ? px - 14 - tw : (rightOk ? px + 14 : Math.max(0, pw - tw)); }
+  else if (rightOk){ left = px + 14; }
+  else { left = leftOk ? px - 14 - tw : Math.max(0, pw - tw); low = true; }
+  tip.classList.toggle('low', low);
+  tip.style.left = left + 'px';
+  if (yPx != null){
+    const ph = plot.clientHeight, th = tip.offsetHeight, y = yPx * (plot.getBoundingClientRect().width / W);
+    tip.classList.remove('low'); tip.style.top = clamp(y - th / 2, 0, Math.max(0, ph - th)) + 'px';
+  } else tip.style.top = '';
+}
+
+/* ---------- lapse-rate chart ---------- */
+const LP = { plot: $('plotLapse'), hover: null };
+LP.svg = LP.plot.querySelector('svg'); LP.tip = LP.plot.querySelector('.tip');
+let M = null;
+function drawLapse(){
+  if (!M) return;
+  const o = LP, { W, H } = frame(o.plot, 340, 410);
+  const m = { l: 50, r: 14, t: 18, b: 32 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const pts = M.D.pts, toF = c => c * 1.8 + 32;
+  let lo = Infinity, hi = -Infinity;
+  pts.forEach(q => [q.Te, q.Tp, q.Td].forEach(c => { const v = toF(c); if (v < lo) lo = v; if (v > hi) hi = v; }));
+  const x0 = Math.floor((lo - 1) / 5) * 5, x1 = Math.ceil((hi + 1) / 5) * 5;
+  const X = fv => m.l + (fv - x0) / (x1 - x0) * pw;
+  const Y = zft => m.t + (1 - zft / ZMAX_FT) * ph;
+  o.lay = { m, W, H, Y };
+  let s = '<text x="' + (m.l - 8) + '" y="10" text-anchor="end">ft</text>';
+  for (let z = 0; z <= ZMAX_FT; z += 500){
+    s += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + f1(Y(z)) + '" y2="' + f1(Y(z)) + '"/>';
+    s += '<text x="' + (m.l - 8) + '" y="' + f1(Y(z) + 4) + '" text-anchor="end">' + fmtFt(z) + '</text>';
+  }
+  const step = (x1 - x0) / 5 > 6 ? 10 : 5;
+  for (let t = Math.ceil(x0 / step) * step; t <= x1; t += step) s += '<text x="' + f1(X(t)) + '" y="' + (H - 8) + '" text-anchor="middle">' + t + '°F</text>';
+  const Hft = S.cliff;
+  // usual top of ridge lift (FAA: 2–3× the height)
+  const b0 = Math.min(2 * Hft, ZMAX_FT), b1 = Math.min(3 * Hft, ZMAX_FT);
+  s += '<rect class="lband" x="' + m.l + '" y="' + f1(Y(b1)) + '" width="' + pw + '" height="' + f1(Y(b0) - Y(b1)) + '"/>';
+  // buoyancy shading between rising air and surroundings
+  let seg = [], sign = 0;
+  const flush = () => {
+    if (seg.length > 1){
+      const fwd = seg.map(q => f1(X(toF(q.Tp))) + ' ' + f1(Y(q.z / FT))), back = seg.slice().reverse().map(q => f1(X(toF(q.Te))) + ' ' + f1(Y(q.z / FT)));
+      s += '<path class="' + (sign > 0 ? 'posw' : 'negw') + '" d="M' + fwd.join(' L') + ' L' + back.join(' L') + ' Z"/>';
+    }
+    seg = [];
+  };
+  pts.forEach(q => {
+    const sg = Math.abs(q.b) < 2e-5 ? 0 : Math.sign(q.b);
+    if (sg !== sign){ if (seg.length){ seg.push(q); } flush(); sign = sg; }
+    seg.push(q);
+  });
+  flush();
+  // reference levels
+  const right = [];
+  right.push({ y: Y(Hft), text: 'Cliff top ' + fmtFt(Hft) + ' ft' });
+  s += '<line class="lvl" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + f1(Y(Hft)) + '" y2="' + f1(Y(Hft)) + '"/>';
+  if (S.invOn && S.invBase <= ZMAX_FT){
+    s += '<line class="lvl" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + f1(Y(S.invBase)) + '" y2="' + f1(Y(S.invBase)) + '"/>';
+    right.push({ y: Y(S.invBase), text: 'Inversion ' + fmtFt(S.invBase) + ' ft' });
+  }
+  if (b1 > b0 + 1) right.push({ y: (Y(b0) + Y(b1)) / 2 + 8, text: 'Usual lift top (FAA)' });
+  const fogFt = M.D.fogBase == null ? null : M.D.fogBase / FT;
+  if (fogFt != null && fogFt <= ZMAX_FT){
+    s += '<line class="fogl" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + f1(Y(fogFt)) + '" y2="' + f1(Y(fogFt)) + '"/>';
+    right.push({ y: Y(fogFt), text: 'Fog forms ' + fmtFt(fogFt) + ' ft' });
+  }
+  // rock face
+  s += '<rect class="rock" x="' + m.l + '" y="' + f1(Y(Hft)) + '" width="9" height="' + f1(Y(0) - Y(Hft)) + '"/>';
+  // lines
+  const line = (key, cls, upto) => { const a = []; pts.forEach(q => { if (upto == null || q.z / FT <= upto + 1) a.push(f1(X(toF(q[key]))) + ' ' + f1(Y(q.z / FT))); }); return '<path class="' + cls + '" d="M' + a.join(' L') + '"/>'; };
+  s += line('Td', 'dry');
+  s += line('Te', 'env');
+  const stopFt = M.zStop == null ? null : M.zStop / FT;
+  if (stopFt != null){
+    const after = pts.filter(q => q.z / FT >= stopFt - 1);
+    s += '<path class="par faded" d="M' + after.map(q => f1(X(toF(q.Tp))) + ' ' + f1(Y(q.z / FT))).join(' L') + '"/>';
+    s += line('Tp', 'par', stopFt);
+  } else s += line('Tp', 'par');
+  // dot at the cliff top on the rising air
+  s += '<circle class="pdot" cx="' + f1(X(toF(M.D.TpH))) + '" cy="' + f1(Y(Hft)) + '" r="4.5"/>';
+  if (stopFt != null && stopFt < ZMAX_FT){
+    const q = pts.reduce((b, c) => Math.abs(c.z / FT - stopFt) < Math.abs(b.z / FT - stopFt) ? c : b, pts[0]);
+    s += '<circle class="pdot" cx="' + f1(X(toF(q.Tp))) + '" cy="' + f1(Y(stopFt)) + '" r="3.5"/>';
+    right.push({ y: Y(stopFt), text: 'Rising air stops ~' + fmtFt(stopFt) + ' ft' });
+  }
+  // right-aligned labels, kept apart
+  right.forEach(r => { r.y -= 4; });
+  right.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < right.length; i++) if (right[i].y - right[i - 1].y < 15) right[i].y = right[i - 1].y + 15;
+  right.forEach(r => { s += '<text class="lbl halo" x="' + (W - m.r - 4) + '" y="' + f1(r.y) + '" text-anchor="end">' + r.text + '</text>'; });
+  if (o.hover != null){
+    const yh = f1(Y(o.hover));
+    s += '<line class="cross" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + yh + '" y2="' + yh + '"/>';
+  }
+  setSvg(o.svg, W, H, s);
+  if (o.hover != null){
+    const q = pts.reduce((b, c) => Math.abs(c.z / FT - o.hover) < Math.abs(b.z / FT - o.hover) ? c : b, pts[0]);
+    const d = (q.Tp - q.Te) * 1.8, bp = q.b / G * 100;
+    showTip(o, X(toF(Math.max(q.Tp, q.Te))), W, fmtFt(q.z / FT) + ' ft' + (q.sat ? ' · in fog' : ''), [
+      { color: 'var(--den-hi)', value: fmtF(q.Te), label: 'surrounding air' },
+      { color: 'var(--h3)', value: fmtF(q.Tp), label: 'rising air (' + sgn(d, 2) + '°F)' },
+      { color: 'var(--ink-3)', value: fmtF(q.Td), label: 'dry adiabat' },
+      { color: bp >= 0 ? 'var(--up)' : 'var(--down)', value: Math.abs(bp).toFixed(2) + '%', label: q.z === 0 ? 'starting point' : (bp >= 0 ? 'lighter than the air around it' : 'heavier than the air around it') }
+    ], false, Y(q.z / FT));
+  } else o.tip.hidden = true;
+}
+(function wireLapse(){
+  const o = LP, plot = o.plot;
+  const zAt = e => {
+    if (!o.lay) return null;
+    const r = plot.getBoundingClientRect(), y = (e.clientY - r.top) * (o.lay.W / r.width);
+    return clamp((1 - (y - o.lay.m.t) / (o.lay.H - o.lay.m.t - o.lay.m.b)) * ZMAX_FT, 0, ZMAX_FT);
+  };
+  plot.addEventListener('pointermove', e => { const z = zAt(e); if (z == null) return; o.hover = Math.round(z / 10) * 10; drawLapse(); });
+  plot.addEventListener('pointerleave', () => { o.hover = null; drawLapse(); });
+  plot.addEventListener('focus', () => { o.hover = S.cliff; drawLapse(); });
+  plot.addEventListener('blur', () => { o.hover = null; drawLapse(); });
+  plot.addEventListener('keydown', e => {
+    if (o.hover == null) o.hover = S.cliff;
+    if (e.key === 'ArrowUp') o.hover = Math.min(ZMAX_FT, o.hover + 50);
+    else if (e.key === 'ArrowDown') o.hover = Math.max(0, o.hover - 50);
+    else return;
+    e.preventDefault(); drawLapse();
+  });
+})();
+
+/* ---------- density and water charts ---------- */
+const PL = {
+  D: { plot: $('plotDensity'), min: 40, max: 90, get: () => S.t, set: v => setTemp(v) },
+  W: { plot: $('plotWater'), min: 40, max: 90, get: () => S.t, set: v => setTemp(v) }
+};
+Object.values(PL).forEach(o => { o.svg = o.plot.querySelector('svg'); o.tip = o.plot.querySelector('.tip'); o.hover = null; o.lay = null; });
+function axes(m, W, H, X, Y, yTicks, fmt, unit){
+  let s = '<text x="' + (m.l - 8) + '" y="12" text-anchor="end">' + unit + '</text>';
+  yTicks.forEach(v => {
+    const y = f1(Y(v));
+    s += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '"/>';
+    s += '<text x="' + (m.l - 8) + '" y="' + f1(Y(v) + 4) + '" text-anchor="end">' + fmt(v) + '</text>';
+  });
+  [40, 50, 60, 70, 80, 90].forEach(t => { s += '<text x="' + f1(X(t)) + '" y="' + (H - 8) + '" text-anchor="middle">' + t + '°F</text>'; });
+  return s;
+}
+function drawDensity(){
+  const o = PL.D, { W, H } = frame(o.plot, 300, 350);
+  const m = { l: 46, r: 42, t: 24, b: 30 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const X = t => m.l + (t - 40) / 50 * pw;
+  const Y = r => m.t + (D_MAX - r) / (D_MAX - D_MIN) * ph;
+  o.lay = { m, pw, W, x0: 40, x1: 90 };
+  let s = axes(m, W, H, X, Y, [1.10, 1.15, 1.20, 1.25, 1.30], v => v.toFixed(2), 'kg/m³');
+  const ys = Y(RHO_STD);
+  s += '<line class="std" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + f1(ys) + '" y2="' + f1(ys) + '"/>';
+  s += '<text class="halo" x="' + (W - m.r - 4) + '" y="' + f1(ys - 6) + '" text-anchor="end">Standard air 1.225 kg/m³</text>';
+  const series = LEVELS.map(rh => { const a = []; for (let t = 40; t <= 90; t++) a.push(f1(X(t)) + ' ' + f1(Y(air(t, rh, S.p).rho))); return a; });
+  s += '<path class="band" d="M' + series[0].join(' L') + ' L' + series[4].slice().reverse().join(' L') + ' Z"/>';
+  series.forEach((a, i) => { s += '<path class="ln" style="stroke:var(--h' + i + ')" d="M' + a.join(' L') + '"/>'; });
+  const e0 = Y(air(90, 0, S.p).rho), e50 = Y(air(90, 50, S.p).rho), e100 = Y(air(90, 100, S.p).rho), ex = W - m.r + 6;
+  s += '<text class="end-label" x="' + ex + '" y="' + f1(e0 + 4) + '">0%</text>';
+  if (e50 - e0 >= 15) s += '<text class="end-label" x="' + ex + '" y="' + f1(e50 + 4) + '">50%</text>';
+  s += '<text class="end-label" x="' + ex + '" y="' + f1(e100 + 4) + '">100%</text>';
+  const a = air(S.t, S.rh, S.p), xn = f1(X(S.t));
+  s += '<line class="now-line" x1="' + xn + '" x2="' + xn + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>';
+  if (o.hover != null){
+    const xh = f1(X(o.hover));
+    s += '<line class="cross" x1="' + xh + '" x2="' + xh + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>';
+    LEVELS.forEach((rh, i) => { s += '<circle class="hdot" cx="' + xh + '" cy="' + f1(Y(air(o.hover, rh, S.p).rho)) + '" r="4" style="fill:var(--h' + i + ')"/>'; });
+  }
+  s += '<circle class="now-dot" cx="' + xn + '" cy="' + f1(Y(a.rho)) + '" r="5.5"/>';
+  setSvg(o.svg, W, H, s);
+  if (o.hover != null){
+    const rows = LEVELS.map((rh, i) => ({ color: 'var(--h' + i + ')', value: air(o.hover, rh, S.p).rho.toFixed(3) + ' kg/m³', label: rh + '% humidity' }));
+    showTip(o, X(o.hover), W, o.hover + '°F', rows, false);
+  } else o.tip.hidden = true;
+}
+function drawWater(){
+  const o = PL.W, { W, H } = frame(o.plot, 260, 350);
+  const m = { l: 40, r: 42, t: 24, b: 30 }, YMAX = 40;
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const X = t => m.l + (t - 40) / 50 * pw;
+  const Y = g => m.t + (YMAX - g) / YMAX * ph;
+  o.lay = { m, pw, W, x0: 40, x1: 90 };
+  let s = axes(m, W, H, X, Y, [10, 20, 30, 40], v => String(v), 'g/m³');
+  s += '<line class="axis" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + f1(Y(0)) + '" y2="' + f1(Y(0)) + '"/>';
+  s += '<text x="' + (m.l - 8) + '" y="' + f1(Y(0) + 4) + '" text-anchor="end">0</text>';
+  const cap = [], wat = [];
+  for (let t = 40; t <= 90; t++){ const a = air(t, S.rh, S.p); cap.push(f1(X(t)) + ' ' + f1(Y(a.cap))); wat.push(f1(X(t)) + ' ' + f1(Y(a.water))); }
+  const base = ' L' + f1(X(90)) + ' ' + f1(Y(0)) + ' L' + f1(X(40)) + ' ' + f1(Y(0)) + ' Z';
+  const col = rhColor(S.rh);
+  s += '<path class="band" d="M' + cap.join(' L') + base + '"/>';
+  s += '<path class="wash2" style="fill:var(--h2);fill:' + col + '" d="M' + wat.join(' L') + base + '"/>';
+  s += '<path class="ln" style="stroke:var(--h2);stroke:' + col + '" d="M' + wat.join(' L') + '"/>';
+  s += '<path class="ln" style="stroke:var(--h4)" d="M' + cap.join(' L') + '"/>';
+  [[40, 'start', 7, -9], [60, 'end', -8, -7], [80, 'end', -8, -7]].forEach(([t, anchor, dx, dy]) => {
+    const c = air(t, 0, S.p).cap, x = X(t), y = Y(c);
+    s += '<circle class="pt" cx="' + f1(x) + '" cy="' + f1(y) + '" r="4"/>';
+    s += '<text class="pt-label halo" x="' + f1(x + dx) + '" y="' + f1(y + dy) + '" text-anchor="' + anchor + '">' + c.toFixed(1) + '</text>';
+  });
+  const end = air(90, S.rh, S.p), ex = W - m.r + 6;
+  s += '<text class="end-label" x="' + ex + '" y="' + f1(Y(end.cap) + 4) + '">' + end.cap.toFixed(1) + '</text>';
+  if (S.rh >= 5 && Y(end.water) - Y(end.cap) >= 15) s += '<text class="end-label" x="' + ex + '" y="' + f1(Y(end.water) + 4) + '">' + end.water.toFixed(1) + '</text>';
+  const a = air(S.t, S.rh, S.p), xn = f1(X(S.t));
+  s += '<line class="now-line" x1="' + xn + '" x2="' + xn + '" y1="' + m.t + '" y2="' + f1(Y(0)) + '"/>';
+  if (o.hover != null){
+    const h = air(o.hover, S.rh, S.p), xh = f1(X(o.hover));
+    s += '<line class="cross" x1="' + xh + '" x2="' + xh + '" y1="' + m.t + '" y2="' + f1(Y(0)) + '"/>';
+    s += '<circle class="hdot" cx="' + xh + '" cy="' + f1(Y(h.cap)) + '" r="4" style="fill:var(--h4)"/>';
+    s += '<circle class="hdot" cx="' + xh + '" cy="' + f1(Y(h.water)) + '" r="4" style="fill:var(--h2);fill:' + col + '"/>';
+  }
+  s += '<circle class="now-dot" cx="' + xn + '" cy="' + f1(Y(a.water)) + '" r="5.5"/>';
+  setSvg(o.svg, W, H, s);
+  if (o.hover != null){
+    const h = air(o.hover, S.rh, S.p);
+    showTip(o, X(o.hover), W, o.hover + '°F', [
+      { color: 'var(--h4)', value: h.cap.toFixed(1) + ' g/m³', label: 'most it can hold' },
+      { color: col, fallback: 'var(--h2)', value: h.water.toFixed(1) + ' g/m³', label: 'at ' + S.rh + '% humidity' }
+    ], true);
+  } else o.tip.hidden = true;
+}
+PL.D.draw = drawDensity; PL.W.draw = drawWater;
+function wirePlot(o){
+  const plot = o.plot;
+  let dragging = false;
+  const valAt = e => {
+    const L = o.lay; if (!L) return null;
+    const r = plot.getBoundingClientRect(), px = (e.clientX - r.left) * (L.W / r.width);
+    return clamp(Math.round(L.x0 + (px - L.m.l) / L.pw * (L.x1 - L.x0)), o.min, o.max);
+  };
+  plot.addEventListener('pointermove', e => { const v = valAt(e); if (v == null) return; if (dragging) o.set(v); if (o.hover !== v){ o.hover = v; o.draw(); } });
+  plot.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    dragging = true;
+    try { plot.setPointerCapture(e.pointerId); } catch (err) {}
+    const v = valAt(e); if (v == null) return;
+    o.hover = v; o.set(v); o.draw();
+  });
+  plot.addEventListener('pointerup', () => { dragging = false; });
+  plot.addEventListener('pointercancel', () => { dragging = false; o.hover = null; o.draw(); });
+  plot.addEventListener('pointerleave', () => { if (!dragging){ o.hover = null; o.draw(); } });
+  plot.addEventListener('focus', () => { o.hover = o.get(); o.draw(); });
+  plot.addEventListener('blur', () => { o.hover = null; o.draw(); });
+  plot.addEventListener('keydown', e => {
+    let v = o.get();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') v -= 1;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') v += 1;
+    else if (e.key === 'Home') v = o.min;
+    else if (e.key === 'End') v = o.max;
+    else return;
+    e.preventDefault(); v = clamp(v, o.min, o.max); o.hover = v; o.set(v); o.draw();
+  });
+}
+
+/* ---------- small DOM helpers ---------- */
+function rich(el, parts){
+  el.textContent = '';
+  parts.forEach(p => {
+    if (typeof p === 'string') el.appendChild(document.createTextNode(p));
+    else if (p.ref){ const a = document.createElement('a'); a.className = 'ref'; a.href = '#r' + p.ref; a.textContent = String(p.ref); el.appendChild(a); }
+    else { const b = document.createElement('strong'); b.textContent = p.b; el.appendChild(b); }
+  });
+}
+function setDD(el, main, small){
+  el.textContent = main;
+  if (small){ const s = document.createElement('small'); s.textContent = small; el.appendChild(s); }
+}
+function cell(tr, tag, text, cls){
+  const c = document.createElement(tag); c.textContent = text; if (cls) c.className = cls;
+  if (tag === 'th') c.scope = 'row';
+  tr.appendChild(c); return c;
+}
+function readline(el, parts){
+  el.textContent = '';
+  parts.forEach(([k, v]) => {
+    const span = document.createElement('span');
+    span.appendChild(document.createTextNode(k + ' '));
+    const b = document.createElement('b'); b.textContent = v; span.appendChild(b);
+    el.appendChild(span);
+  });
+}
+
+/* ---------- lift budget ---------- */
+function renderBudget(){
+  const c5 = M.net, c6 = M.net + M.wstar;
+  const fogFt = M.D.fogBase == null ? null : M.D.fogBase / FT;
+  const gHum = M.gV, rv = M.D.r0 * 1000, rt = M.D.reH * 1000;
+  const wV = M.wA + M.gV, wK = wV + M.gK;
+  const rows = [
+    { label: 'Ridge lift from the wind', sub: (M.uIn / KN_MS).toFixed(1) + ' kn into a ' + ratio(S.slope) + ' airflow slope', a: 0, b: M.wr },
+    { label: 'Stable air blocking', sub: M.block >= 1 ? 'none: the wind carries the air over' : 'only the top ' + Math.round(M.block * 100) + '% of the cliff lifts air', a: M.wr, b: M.wm },
+    { label: 'Lapse rate', sub: M.A.EH > 0 ? 'temperature alone: rising air ends up warmer' : 'temperature alone: rising air ends up colder, no boost', a: M.wm, b: M.wA },
+    { label: 'Humid air is lighter', sub: gHum >= 0.005 ? rv.toFixed(1) + ' g/kg of vapor rising into air with ' + rt.toFixed(1) + ' g/kg' : gHum <= -0.005 ? 'air around it is more humid: ' + rv.toFixed(1) + ' vs ' + rt.toFixed(1) + ' g/kg' : (rv > rt + 0.05 ? 'not enough to make rising air buoyant' : 'air around it is as humid or more'), a: M.wA, b: wV },
+    { label: 'Fog forming', sub: fogFt == null || fogFt > S.cliff ? 'no fog below the cliff top' : fogFt < 1 ? 'in fog from the beach up' : 'heat from condensing fog above ' + fmtFt(fogFt) + ' ft', a: wV, b: wK },
+    { label: 'Sun warming the airflow', sub: sgn(M.dTsun * 1.8, 2) + '°F by the cliff top', a: wK, b: M.wD },
+    { label: 'Your wing’s sink', sub: S.sink.toFixed(2) + ' m/s at sea level, ' + M.sinkTop.toFixed(2) + ' m/s here', a: M.wD, b: c5, kind: 'down' },
+    { label: 'Net climb', a: 0, b: c5, kind: 'net', cls: 'total' },
+    { label: 'In a thermal, add up to', sub: 'sun-driven thermals', a: c5, b: c6, kind: 'th', cls: 'extra' }
+  ];
+  const vals = rows.flatMap(r => [r.a, r.b]);
+  let lo = Math.min(0, ...vals), hi = Math.max(0.5, ...vals);
+  const pad = (hi - lo) * 0.04; lo -= pad; hi += pad;
+  const P = v => (v - lo) / (hi - lo) * 100;
+  const wf = $('wf'); wf.textContent = '';
+  rows.forEach(r => {
+    const row = document.createElement('div'); row.className = 'wf-row' + (r.cls ? ' ' + r.cls : '');
+    const lab = document.createElement('div'); lab.className = 'wf-label'; lab.textContent = r.label;
+    if (r.sub){ const sm = document.createElement('small'); sm.textContent = r.sub; lab.appendChild(sm); }
+    const track = document.createElement('div'); track.className = 'wf-track';
+    const zero = document.createElement('div'); zero.className = 'wf-zero'; zero.style.left = P(0) + '%'; track.appendChild(zero);
+    const d = r.b - r.a, kind = r.kind || (d >= 0 ? 'up' : 'down');
+    const bar = document.createElement('div'); bar.className = 'wf-bar ' + kind;
+    bar.style.left = Math.min(P(r.a), P(r.b)) + '%'; bar.style.width = Math.abs(P(r.b) - P(r.a)) + '%';
+    if (Math.abs(d) > 1e-4) track.appendChild(bar);
+    const val = document.createElement('div'); val.className = 'wf-val';
+    const shown = r.kind === 'net' ? r.b : d;
+    val.textContent = sgn(shown, 2) + ' m/s';
+    const sm = document.createElement('small'); sm.textContent = sgnFpm(shown) + ' fpm'; val.appendChild(sm);
+    row.append(lab, track, val); wf.appendChild(row);
+  });
+  const boosted = M.wD - M.wm >= 0.005;
+  $('netNum').textContent = sgn(M.net, 2);
+  $('netFpm').textContent = sgnFpm(M.net) + ' fpm net climb' + (boosted ? ', at best' : '');
+  const nb = $('netBase'); nb.hidden = !boosted;
+  if (boosted) nb.textContent = 'Ridge lift alone, if mixing erases the buoyancy: ' + sgn(M.base, 2) + ' m/s (' + sgnFpm(M.base) + ' fpm)';
+
+  // key facts
+  const H = S.cliff;
+  if (fogFt == null || fogFt > ZMAX_FT){ $('fFog').textContent = 'None'; $('fFogP').textContent = 'Air riding up the cliff stays clear below ' + fmtFt(ZMAX_FT) + ' ft.'; }
+  else if (fogFt < 1){ $('fFog').textContent = 'At the beach'; $('fFogP').textContent = 'The beach air is already saturated.'; }
+  else if (fogFt <= H){ $('fFog').textContent = fmtFt(fogFt) + ' ft'; $('fFogP').textContent = 'Rising air saturates here, so fog forms on the face.'; }
+  else { $('fFog').textContent = 'Above the top'; $('fFogP').textContent = 'Rising air would saturate at ' + fmtFt(fogFt) + ' ft, above the ' + fmtFt(H) + ' ft cliff.'; }
+  const faaLo = 2 * H, faaHi = 3 * H, stopFt = M.zStop == null ? null : M.zStop / FT, inv = S.invOn ? S.invBase : null;
+  let top = faaHi, why = 'Ridge lift usually reaches 2–3 times the cliff height: ' + fmtFt(faaLo) + '–' + fmtFt(faaHi) + ' ft (FAA).';
+  if (inv != null && inv < top){ top = inv; why = 'The inversion at ' + fmtFt(inv) + ' ft caps the usual ' + fmtFt(faaLo) + '–' + fmtFt(faaHi) + ' ft lift band.'; }
+  if (stopFt != null && stopFt < top){
+    top = stopFt;
+    why = stopFt <= H + 10 ? 'Stable air stops the rising air at the cliff top, so the wind can’t carry it higher.' : 'Stable air stops rising air about ' + fmtFt(stopFt - H) + ' ft above the cliff top.';
+  }
+  $('fTop').textContent = '~' + fmtFt(top) + ' ft'; $('fTopP').textContent = why;
+  const v = verdict();
+  $('fStab').textContent = v.short;
+  $('fStabP').textContent = M.Fr === Infinity ? 'Air riding up the cliff ends up buoyant here, so stability doesn’t hold it back.' :
+    'Froude number ' + M.Fr.toFixed(1) + (M.Fr >= 1 ? ': the wind carries air up and over the cliff.' : ': stable air tends to slow in front of the cliff instead of rising over it.');
+  const da = daFt(M.D.rhoTop);
+  $('fDA').textContent = fmtFt(da) + ' ft';
+  $('fDAP').textContent = 'Your wing flies as it would at ' + fmtFt(da) + ' ft on a standard day.';
+}
+// Stability class from the lapse rate against the dry and saturated adiabats [27][28][29]
+function stabClass(gE, gS){ return gE > GAMMA_D + 1e-6 ? 'Unstable' : gE > gS ? 'Conditionally unstable' : gE >= 0 ? 'Stable' : 'Inversion'; }
+function verdict(){
+  const gE = S.lapse * (5 / 9) / (1000 * FT), gS = gammaS((S.t - 32) / 1.8, S.p * PA_PER_INHG), c = stabClass(gE, gS);
+  if (c === 'Unstable') return { short: c, text: 'Your air cools faster with height than even dry rising air, so any air that starts rising keeps getting warmer than its surroundings. Expect thermals and a bumpy, boosted lift band.' };
+  if (c === 'Conditionally unstable'){
+    const fogOnFace = M.D.fogBase != null && M.D.fogBase / FT <= S.cliff;
+    return { short: c, text: 'Clear rising air cools faster than your air, but air rising in fog cools more slowly, so fog on the face can leave it warmer than its surroundings. If the air around it is also drier, it ends up lighter, and that extra buoyancy adds lift.'
+      + (fogOnFace ? '' : ' Here the rising air stays clear up the face, so it gets no fog boost.') };
+  }
+  if (c === 'Stable') return { short: c, text: 'Your air cools more slowly than rising air does, clear or foggy, so rising air ends up colder than its surroundings. Unless extra moisture makes it lighter, it rises only because the wind forces it up the face. Lift near the face is smooth, but it fades quickly above the top, and in light wind the lowest air goes around the cliff instead of over it.' };
+  return { short: c, text: 'Your air gets warmer with height, so rising air quickly becomes much colder than its surroundings. The wind has to force every foot of climb, the lift band stays low, and in light wind much of the air goes around the cliff.' };
+}
+
+/* ---------- other panels ---------- */
+function renderLapse(){
+  const body = $('lapseBody'); body.textContent = '';
+  const satT = M.D.fogBase != null && M.D.fogBase / FT <= ZMAX_FT ? M.D.pts.reduce((b, c) => Math.abs(c.z - M.D.fogBase) < Math.abs(b.z - M.D.fogBase) ? c : b).Tp : (S.t - 32) / 1.8;
+  const pSat = S.p * PA_PER_INHG * Math.exp(-G * (M.D.fogBase || 0) / (RD * ((S.t - 32) / 1.8 + 273.15)));
+  const gS = gammaS(satT, pSat);
+  const rows = [
+    ['Dry rising air', GAMMA_D, 'dry adiabatic'],
+    ['Rising air in fog at ' + fmtF(satT), gS, 'saturated adiabatic'],
+    ['Your air, up to ' + (S.invOn ? fmtFt(S.invBase) + ' ft' : fmtFt(ZMAX_FT) + ' ft'), S.lapse * (5 / 9) / (1000 * FT), null]
+  ];
+  if (S.invOn) rows.push(['Above the inversion', -S.invStr * (5 / 9) / (1000 * FT), 'warmer aloft']);
+  rows.forEach(([label, g]) => {
+    const tr = document.createElement('tr');
+    cell(tr, 'th', label);
+    cell(tr, 'td', (g * 1000 * FT * 1.8).toFixed(2), 'you');
+    cell(tr, 'td', (g * 1000).toFixed(2));
+    body.appendChild(tr);
+  });
+  const v = verdict();
+  rich($('lapseVerdict'), [{ b: v.short + '.' }, ' ' + v.text]);
+  const dT = (M.D.TpH - M.D.TeH) * 1.8, bp = M.D.bH / G * 100;
+  setDD($('mDT'), sgn(dT, 2) + '°F', (dT >= 0 ? 'warmer' : 'colder') + ' than the air around it, and ' + Math.abs(bp).toFixed(2) + '% ' + (bp >= 0 ? 'lighter' : 'heavier') + ' with moisture counted');
+  setDD($('mE'), sgn(M.D.EH, 2) + ' J/kg', M.D.EH >= 0 ? 'energy gained from buoyancy' : 'energy lost to buoyancy');
+  setDD($('mFr'), M.Fr === Infinity ? 'No limit' : M.Fr.toFixed(1), M.Fr === Infinity ? 'rising air is buoyant' : (M.Fr >= 1 ? 'air rides up and over' : 'stable air slows in front'));
+  const stopFt = M.zStop == null ? null : M.zStop / FT;
+  setDD($('mStop'), stopFt == null ? 'Not below ' + fmtFt(ZMAX_FT) + ' ft' : '~' + fmtFt(stopFt) + ' ft', stopFt == null ? 'buoyancy keeps it going' : (stopFt <= S.cliff + 10 ? 'at the cliff top' : fmtFt(stopFt - S.cliff) + ' ft above the cliff top'));
+  $('lapseNote').textContent = 'Clear rising air cools ' + (GAMMA_D * 1000 * FT * 1.8).toFixed(2) + '°F per 1,000 ft. In fog it cools about ' + (gS * 1000 * FT * 1.8).toFixed(1) + '°F, which is why fog on the face can add lift when your air cools faster than that.';
+  // Saturated surroundings steeper than the saturated adiabat overturn on their own
+  const gE = S.lapse * (5 / 9) / (1000 * FT), gTop = gammaS(M.D.TeH, M.D.pH), msg = [];
+  if (S.rhTop >= 99.5 && gE > gTop + 1e-5) msg.push('Saturated air that cools faster than ' + (gTop * 1000 * FT * 1.8).toFixed(1) + '°F per 1,000 ft is unstable on its own and overturns, so it rarely lasts. Inside a real fog bank the lapse rate sits near the saturated rate or below it.');
+  else if (M.B.EH > 0.02 && stabClass(gE, gS) !== 'Unstable'){
+    const D = M.D, tv = (T, r) => (T + 273.15) * (1 + r / EPS) / (1 + r), gv = (tv(D.T0, D.r0) - tv(D.TeH, D.reH)) / D.H * 1000 * FT * 1.8;
+    msg.push('Counting humidity, the surrounding air is unstable on its own. It holds more vapor at the beach (' + (D.r0 * 1000).toFixed(1) + ' g/kg) than at the cliff top (' + (D.reH * 1000).toFixed(1) + ' g/kg), so its density falls off as fast as if it cooled ' + gv.toFixed(1) + '°F per 1,000 ft, more than the 5.35°F of dry rising air. Air like this overturns into thermals. That happens over sun-heated ground but rarely lasts over a cool sea, so treat the humidity boost as short-lived.');
+  }
+  const warn = $('lapseWarn'); warn.hidden = !msg.length;
+  if (msg.length) rich(warn, [{ b: 'Check this setup. ' }, msg.join(' ')]);
+}
+function renderFog(){
+  const C = M.C, fogFt = C.fogBase == null ? null : C.fogBase / FT;
+  if (fogFt != null && fogFt <= S.cliff){
+    const Q = C.rlH * latentHeat((C.TpH + C.T0) / 2), dW = (C.TpH - C.TdH) * 1.8, gain = M.gK;
+    const parts = fogFt < 1
+      ? ['The beach air is already saturated, so air riding up the cliff is in fog from the start. Between the beach and the top, ']
+      : ['Air riding up the cliff reaches its dew point at ', { b: fmtFt(fogFt) + ' ft' }, ', so fog forms on the face there. Between there and the top, '];
+    parts.push({ b: (C.rlH * 1000).toFixed(2) + ' g' }, ' of water condenses out of each kilogram of air and releases ', { b: Math.round(Q) + ' J/kg' }, ' of heat. That keeps the rising air ',
+      { b: dW.toFixed(2) + '°F' }, ' warmer than clear air would be');
+    if (gain >= 0.005) parts.push(', worth ', { b: sgn(gain, 2) + ' m/s' }, ' of lift here, after the weight of the droplets.');
+    else if (M.D.EH <= 0) parts.push(', but it still ends up heavier than the air around it, so the fog adds no lift here.');
+    else parts.push(', which changes the lift here by ', { b: sgn(gain, 2) + ' m/s' }, '.');
+    rich($('fogForm'), parts);
+  } else if (fogFt != null && fogFt <= ZMAX_FT){
+    rich($('fogForm'), ['Air riding up the cliff stays clear. It would have to rise to ', { b: fmtFt(fogFt) + ' ft' }, ' to reach its dew point. More humid or cooler air brings that level down onto the face.']);
+  } else {
+    rich($('fogForm'), ['Air riding up the cliff stays clear below ' + fmtFt(ZMAX_FT) + ' ft. Fog would need much more humid air.']);
+  }
+  const depthFt = S.invOn ? S.invBase : S.cliff, kJ = S.lwc / 1000 * depthFt * FT * latentHeat(M.a0.tc) / 1000;
+  if (S.lwc > 0) rich($('fogBurn'), ['Evaporating a fog layer ', { b: fmtFt(depthFt) + ' ft' }, ' deep holding ', { b: S.lwc.toFixed(2) + ' g/m³' }, ' takes ', { b: kJ.toFixed(0) + ' kJ' },
+    ' per square meter of ground. Full sunshine, about 1,000 W/m², supplies that in ', { b: (kJ / SUN_FULL * 1000 / 60).toFixed(1) + ' minutes' },
+    ' at the very least. Burn-off is slower in practice, because only part of the sunlight goes into evaporating droplets. Sunlight pays that heat, so fog burned off by the sun does not chill the air.']);
+  else rich($('fogBurn'), ['Set some fog water to see how much energy burning it off takes.']);
+
+  const a = M.a0, f = fogEvaporates(a, S.lwc), ke = qPa(M.D.rhoTop, S.wind);
+  $('lwcOut').textContent = S.lwc.toFixed(2) + ' g/m³';
+  fogChips.forEach(b => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.lwc - S.lwc) < 0.005)));
+  const body = $('baBody'); body.textContent = '';
+  [
+    ['Air temperature', fmtF(a.tc), fmtF(f.t2), sgn((f.t2 - a.tc) * 1.8, 2) + '°F'],
+    ['Relative humidity', S.rh.toFixed(0) + '%', f.rh2.toFixed(1) + '%', sgn(f.rh2 - S.rh, 1) + ' points'],
+    ['Liquid fog water', S.lwc.toFixed(2) + ' g/m³', f.left.toFixed(2) + ' g/m³', f.evap >= 0.005 ? '−' + f.evap.toFixed(2) + ' g/m³' : 'none'],
+    ['Air density, with droplets', f.before.toFixed(4) + ' kg/m³', f.after.toFixed(4) + ' kg/m³', sgnPct((f.after / f.before - 1) * 100)]
+  ].forEach(r => {
+    const tr = document.createElement('tr');
+    cell(tr, 'th', r[0]); cell(tr, 'td', r[1]);
+    const after = cell(tr, 'td', r[2], 'you'), chg = document.createElement('small'); chg.textContent = r[3]; after.appendChild(chg);
+    body.appendChild(tr);
+  });
+  const bEv = -G * (f.after / f.before - 1), wDown = bEv < 0 ? Math.sqrt(2 * -bEv * 100 * FT) : 0;
+  setDD($('eHeat'), Math.round(f.heat) + ' J/m³', null);
+  setDD($('eSink'), (wDown > 0 ? '−' : '') + wDown.toFixed(2) + ' m/s', (wDown > 0 ? '−' : '') + fpm(wDown) + ' fpm after 100 ft');
+  $('eKeLabel').textContent = 'Wind’s kinetic energy at ' + S.wind + ' kn';
+  setDD($('eKe'), ke.toFixed(1) + ' J/m³', null);
+  if (S.rh >= 100) rich($('fogText'), ['The beach air is already saturated, so fog can’t evaporate into it. Lower the humidity to see the effect.']);
+  else if (S.lwc <= 0) rich($('fogText'), ['Add some fog water to see what evaporating it does.']);
+  else {
+    const parts = [];
+    if (f.limited) parts.push('The beach air can only take up ', { b: f.evap.toFixed(2) + ' g/m³' }, ' before it saturates at ', { b: fmtF(f.t2) }, '. The rest stays as droplets. ');
+    parts.push('Evaporating ', { b: f.evap.toFixed(2) + ' g/m³' }, ' takes ', { b: Math.round(f.heat) + ' J' }, ' of heat out of each cubic meter, ', { b: (f.heat / ke).toFixed(0) + ' times' },
+      ' the wind’s kinetic energy. That heat goes into water vapor, not wind. The chilled air is ', { b: sgnPct((f.after / f.before - 1) * 100) }, ' denser than the air around it, so it sinks.');
+    rich($('fogText'), parts);
+  }
+}
+function renderSun(){
+  const rhoc = M.a0.rho * CPA, need = rhoc * Math.max(M.uIn, 0.3) * (5 / 9);
+  $('sDT').textContent = sgn(M.dTsun * 1.8, 3) + '°F';
+  $('sNeed').textContent = fmtFt(need) + ' W/m²';
+  $('sNeedP').textContent = 'About ' + (need / SUN_FULL).toFixed(1) + ' times full sunshine, at ' + (M.uIn / KN_MS).toFixed(1) + ' kn into the cliff.';
+  setDD($('sW'), M.wstar.toFixed(2) + ' m/s', fpm(M.wstar) + ' fpm');
+  $('sWP').textContent = 'Deardorff velocity for a ' + fmtFt(M.zi / FT) + ' ft mixed layer' + (S.invOn ? ' (up to the inversion).' : ' (no inversion set).');
+  $('sLift').textContent = sgn(M.gS, 3) + ' m/s';
+  rich($('sunText'), ['Sunshine heats rock and sand, and they heat the air touching them. At ', { b: (M.uIn / KN_MS).toFixed(1) + ' kn' }, ' into the cliff, the air riding up the face moves past so fast that ',
+    { b: S.sun + ' W/m²' }, ' warms it by only ', { b: sgn(M.dTsun * 1.8, 3) + '°F' }, ' on average. So in ridge-lift wind the sun mostly works in other ways. It builds pockets of warm air that break away as thermals, typically about ',
+    { b: M.wstar.toFixed(1) + ' m/s' }, ' here.', { ref: 22 }, ' It also heats the land faster than the sea, which drives the onshore sea breeze.', { ref: 25 }, ' In lighter wind the same heating warms the air more, and thermals matter more.']);
+}
+function renderFeel(){
+  const a = M.a0, rt = M.D.rhoTop, v = S.wind * KN_MS;
+  $('rho').textContent = a.rho.toFixed(3);
+  setNeedle(a.rho);
+  const d = (a.rho / RHO_STD - 1) * 100;
+  $('vsStd').textContent = Math.abs(d) < 0.05 ? 'Same push as standard air' : Math.abs(d).toFixed(1) + '% ' + (d > 0 ? 'more' : 'less') + ' push than standard air';
+  setDD($('daBeach'), fmtFt(daFt(a.rho)) + ' ft', a.rho.toFixed(3) + ' kg/m³');
+  $('daTopLabel').textContent = 'Density altitude, ' + fmtFt(S.cliff) + ' ft cliff top';
+  setDD($('daTop'), fmtFt(daFt(rt)) + ' ft', rt.toFixed(3) + ' kg/m³');
+  const q = qPa(rt, S.wind);
+  $('qLabel').textContent = 'Wind pressure at ' + S.wind + ' kn';
+  setDD($('qVal'), q.toFixed(1) + ' N/m²', (q * PA_PSF).toFixed(2) + ' lbf/ft²');
+  setDD($('eqWind'), (S.wind * Math.sqrt(rt / RHO_STD)).toFixed(1) + ' kn', 'at the cliff top');
+  const k = (Math.sqrt(RHO_STD / rt) - 1) * 100;
+  rich($('feelWing'), ['At the cliff top your wing’s true airspeed and sink are both ', { b: sgnPct(k) }, ' compared with standard sea-level air, because lift and drag scale with density × speed².']);
+  rich($('feelTwice'), ['Wind speed counts twice: faster wind brings more air each second and more momentum in every kilogram. So push grows with speed squared, while density counts once.']);
+  const mass = rt * v, mom = mass * v, push = CD_PLATE * q;
+  $('cVol').textContent = v.toFixed(2);
+  rich($('cVolCap'), ['reaches each square meter facing the wind every second, because the wind moves ', { b: v.toFixed(2) + ' m/s' }, '.']);
+  $('cMass').textContent = mass.toFixed(2);
+  rich($('cMassCap'), [v.toFixed(2) + ' m³ × ', { b: rt.toFixed(3) + ' kg/m³' }, ', the air density at the cliff top.']);
+  $('cMom').textContent = mom.toFixed(1);
+  rich($('cMomCap'), [mass.toFixed(2) + ' kg × ' + v.toFixed(2) + ' m/s, arriving every second. Stopping all of it would take ', { b: mom.toFixed(1) + ' N' }, ' on each square meter.']);
+  $('cPush').textContent = fmtN(push);
+}
+function renderDensityRef(){
+  const a = M.a0, dens = a.rho.toFixed(3);
+  const lighter = (1 - a.rho / a.rhoDry) * 100;
+  const intro = 'A water vapor molecule (18.015 g/mol) is lighter than the average dry-air molecule (28.965 g/mol) it replaces. ';
+  if (S.rh < 1) rich($('k1'), [intro + 'At 0% humidity there is no vapor yet, so raise the humidity to see the effect.']);
+  else rich($('k1'), [intro + 'At ', { b: S.t + '°F' }, ', ', { b: S.rh + '%' }, ' humidity makes the air ', { b: fmtPct(lighter) }, ' lighter than dry air. Dry air would have to be ', { b: a.warmF.toFixed(1) + '°F' }, ' warmer to be this light (the virtual temperature).']);
+  const s90 = air(90, 100, S.p), s40 = air(40, 100, S.p), soft = s90.rho, punchy = air(40, 0, S.p).rho;
+  const d90 = (1 - s90.rho / s90.rhoDry) * 100, d40 = (1 - s40.rho / s40.rhoDry) * 100;
+  rich($('k2'), ['Air at 90°F can hold ', { b: s90.cap.toFixed(1) + ' g/m³' }, ' of water vapor. At 40°F it holds only ', { b: s40.cap.toFixed(1) + ' g/m³' }, ', about a fifth as much. So going from dry to saturated thins the air ', { b: fmtPct(d90) }, ' at 90°F and only ', { b: fmtPct(d40) }, ' at 40°F.']);
+  const lo = air(40, S.rh, S.p), hi = air(90, S.rh, S.p);
+  rich($('k3'), ['From 40°F to 90°F at ', { b: S.rh + '%' }, ' humidity, the air thins ', { b: ((1 - hi.rho / lo.rho) * 100).toFixed(1) + '%' }, '. Humidity alone never moves it more than ', { b: fmtPct(d90) }, ' in this range. Cold, dry air pushes ', { b: Math.round((punchy / soft - 1) * 100) + '%' }, ' harder than hot, saturated air at the same wind speed.']);
+  const dry = air(S.t, 0, S.p), sat = air(S.t, 100, S.p);
+  readline($('readD'), [['At', S.t + '°F:'], ['dry', dry.rho.toFixed(3) + ' kg/m³'], ['saturated', sat.rho.toFixed(3) + ' kg/m³'], ['yours (' + S.rh + '%)', dens + ' kg/m³']]);
+  readline($('readW'), [['At', S.t + '°F:'], ['can hold', a.cap.toFixed(1) + ' g/m³'], ['holds now', a.water.toFixed(1) + ' g/m³']]);
+  const key = $('rhKey'); key.style.background = 'var(--h2)'; key.style.background = rhColor(S.rh);
+  $('rhKeyLabel').textContent = 'At ' + S.rh + '% humidity';
+}
+const tbody = $('tbody');
+let tableP = null;
+function buildTable(){
+  tbody.textContent = '';
+  for (let t = 40; t <= 90; t += 5){
+    const tr = document.createElement('tr');
+    cell(tr, 'th', t + '°F');
+    LEVELS.forEach(rh => {
+      const d = air(t, rh, S.p).rho, td = cell(tr, 'td', d.toFixed(3));
+      td.dataset.t = t; td.dataset.rh = rh;
+      td.style.setProperty('--tp', (clamp((d - D_MIN) / (D_MAX - D_MIN), 0, 1) * 100).toFixed(1) + '%');
+    });
+    cell(tr, 'td', air(t, 100, S.p).cap.toFixed(1), 'cap');
+    tbody.appendChild(tr);
+  }
+  tableP = S.p;
+  $('tableP').textContent = S.p.toFixed(2) + ' inHg';
+}
+function markTable(){
+  const tn = clamp(Math.round(S.t / 5) * 5, 40, 90), rn = clamp(Math.round(S.rh / 25) * 25, 0, 100);
+  tbody.querySelectorAll('td.now').forEach(td => td.classList.remove('now'));
+  const c = tbody.querySelector('td[data-t="' + tn + '"][data-rh="' + rn + '"]');
+  if (c) c.classList.add('now');
+}
+function buildBench(){
+  const body = $('benchBody'); body.textContent = '';
+  const pct = (t, r) => sgnPct((t / r - 1) * 100);
+  const lcl = (() => { const tc = (60 - 32) / 1.8, tdc = (50 - 32) / 1.8, rh = esPa(tdc) / esPa(tc) * 100;
+    const pr = parcel({ tF: 60, rh, rhTop: rh, inHg: 29.92, cliffFt: 500, lapseF: 5.35, invFt: null, dTsun: 0 }); return pr.fogBase / FT; })();
+  const gs5 = gammaS(5, 100000) * 1000, gs5S = gammaS(5, 100000), gs60 = gammaS((60 - 32) / 1.8, 29.92 * PA_PER_INHG) * 1000 * FT;
+  const cls = [4, 9, 11].map(k => stabClass(k / 1000, gs5S));
+  const clsOk = cls[0] === 'Stable' && cls[1] === 'Conditionally unstable' && cls[2] === 'Unstable';
+  const tv = (() => { const T = 293.15, r = 0.010; return { exact: T * (1 + r / EPS) / (1 + r) - T, approx: T * 0.61 * r }; })();
+  const ridge = 15 * KN_MS * 0.25 / Math.sqrt(1 + 0.0625) / FT;
+  const da90 = daFt(air(90, 0, 29.92).rho), nws90 = nwsDA(90, 29.92, 0);
+  const ws = Math.cbrt(G / 288.15 * (150 / (1.2 * CPA)) * 1200 * FT);
+  const gs15 = gammaS(15, P_STD) * 1000;
+  const rows = [
+    ['Standard air density', '59°F (15°C), dry, 101.325 kPa', '1.2250 kg/m³', airAt(15, 0, P_STD).rho.toFixed(4) + ' kg/m³', pct(airAt(15, 0, P_STD).rho, 1.225), 1],
+    ['Saturation vapor pressure', '68°F (20°C)', '2.3393 kPa', (esPa(20) / 1000).toFixed(4) + ' kPa', pct(esPa(20) / 1000, 2.3393), 2],
+    ['Moist air density', '59°F, 50% RH, 101.325 kPa', cipm2007(15, 0.5, P_STD).toFixed(4) + ' kg/m³ (CIPM-2007 formula, computed)', airAt(15, 50, P_STD).rho.toFixed(4) + ' kg/m³', pct(airAt(15, 50, P_STD).rho, cipm2007(15, 0.5, P_STD)), 3],
+    ['Heat to evaporate water', '59°F (15°C)', '2465.3 kJ/kg', (latentHeat(15) / 1000).toFixed(1) + ' kJ/kg', pct(latentHeat(15) / 1000, 2465.3), 2],
+    ['Wind pressure, ½ρv²', '20 mph, standard air', '1.024 lbf/ft² (0.00256 × 20²)', (qPa(RHO_STD, 20 / KN_MPH) * PA_PSF).toFixed(4) + ' lbf/ft²', pct(qPa(RHO_STD, 20 / KN_MPH) * PA_PSF, 1.024), 4],
+    ['Dry adiabatic lapse rate', 'g ÷ specific heat of dry air', 'about 9.8°C/km', (GAMMA_D * 1000).toFixed(2) + '°C/km', pct(GAMMA_D * 1000, 9.8), 14],
+    ['Dry adiabatic lapse rate', 'per 1,000 ft, as pilots use it', '3°C (5.4°F) per 1,000 ft', (GAMMA_D * 1000 * FT).toFixed(2) + '°C (' + (GAMMA_D * 1000 * FT * 1.8).toFixed(2) + '°F)', pct(GAMMA_D * 1000 * FT, 3), 32],
+    ['Saturated adiabatic lapse rate', '60°F, 29.92 inHg, per 1,000 ft', '1.1–2.8°C (2–5°F) per 1,000 ft', gs60.toFixed(2) + '°C (' + (gs60 * 1.8).toFixed(2) + '°F)', gs60 >= 1.1 && gs60 <= 2.8 ? 'in range' : 'out of range', 32],
+    ['Saturated adiabatic lapse rate', '59°F (15°C), 1013 hPa', 'typically about 5°C/km; range 3.6–9.2', gs15.toFixed(2) + '°C/km', gs15 >= 3.6 && gs15 <= 9.2 ? 'in range' : 'out of range', 16],
+    ['Saturated adiabatic lapse rate', '41°F (5°C), 1000 hPa', 'about 6°C/km, the usual lower-air value', gs5.toFixed(2) + '°C/km', pct(gs5, 6), 27],
+    ['Stability class', 'lapse rate 4, 9 and 11°C/km', 'absolutely stable, conditionally unstable, absolutely unstable', cls.join(', '), clsOk ? 'match' : 'differs', 27],
+    ['Humid air is lighter', '68°F (20°C), 10 g/kg of vapor', '+' + tv.approx.toFixed(2) + ' K virtual warming (T × 0.61r, computed)', '+' + tv.exact.toFixed(2) + ' K', pct(tv.exact, tv.approx), 13],
+    ['Fog or cloud base', '60°F, dew point 50°F', '2,273 ft ((T − Td) ÷ 4.4 × 1,000)', fmtFt(lcl) + ' ft', pct(lcl, 2273), 17],
+    ['Ridge lift', '15 kn into a 1:4 slope', 'about 6 ft/s', ridge.toFixed(2) + ' ft/s', pct(ridge, 6), 18],
+    ['Density altitude', '90°F, 29.92 inHg, dry', fmtFt(nws90) + ' ft (NWS formula, computed)', fmtFt(da90) + ' ft', (da90 - nws90 >= 0 ? '+' : '−') + Math.abs(Math.round(da90 - nws90)) + ' ft', 23],
+    ['Thermal strength (Deardorff)', '150 W/m², 1,200 ft mixed layer', 'on the order of 1 m/s', ws.toFixed(2) + ' m/s', 'same order', 22]
+  ];
+  rows.forEach(([what, cond, pub, tool, diff, src]) => {
+    const tr = document.createElement('tr');
+    cell(tr, 'th', what);
+    cell(tr, 'td', cond, 'l');
+    cell(tr, 'td', pub, 'l');
+    cell(tr, 'td', tool, 'you');
+    cell(tr, 'td', diff, 'diff');
+    const td = document.createElement('td'), link = document.createElement('a');
+    link.href = '#r' + src; link.textContent = '[' + src + ']'; td.appendChild(link); tr.appendChild(td);
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- update ---------- */
+function update(){
+  M = liftModel();
+  const a = M.a0, dens = a.rho.toFixed(3);
+  $('tempOut').textContent = S.t + '°F';
+  $('tempHelp').textContent = ((S.t - 32) / 1.8).toFixed(1) + '°C';
+  $('rhOut').textContent = S.rh + '%';
+  const dp = dewPointF(a.e);
+  $('rhHelp').textContent = S.rh < 1 ? 'No water vapor at all' : 'Dew point ' + Math.round(dp) + '°F · ' + a.water.toFixed(1) + ' g/m³ of water vapor';
+  $('baroOut').textContent = S.p.toFixed(2) + ' inHg';
+  $('baroHelp').textContent = (S.p * PA_PER_INHG / 100).toFixed(0) + ' hPa (mb)';
+  $('sunOut').textContent = S.sun + ' W/m²';
+  $('windOut').textContent = S.wind + ' kn';
+  $('windHelp').textContent = (S.wind * KN_MS).toFixed(2) + ' m/s · ' + (S.wind * KN_MPH).toFixed(1) + ' mph';
+  $('angOut').textContent = S.ang + '°';
+  $('angHelp').textContent = (M.uIn / KN_MS).toFixed(1) + ' kn blows straight into the cliff.' + (S.ang > 40 ? ' The FAA wants within 30–40° for ridge lift.' : '');
+  $('cliffOut').textContent = fmtFt(S.cliff) + ' ft';
+  $('cliffHelp').textContent = Math.round(S.cliff * FT) + ' m';
+  $('slopeOut').textContent = ratio(S.slope);
+  $('lapseOut').textContent = (S.lapse > 0 ? '' : S.lapse < 0 ? '−' : '') + Math.abs(S.lapse).toFixed(1) + '°F';
+  $('lapseHelp').textContent = (S.lapse >= 0 ? 'Cooler by ' + S.lapse.toFixed(1) : 'Warmer by ' + Math.abs(S.lapse).toFixed(1)) + '°F per 1,000 ft up (' + (S.lapse * 5 / 9 / (1000 * FT) * 1000).toFixed(1) + '°C/km), so ' + fmtF(M.D.TeH) + ' at the cliff top. Dry rising air cools 5.35°F.';
+  $('rhTopOut').textContent = S.rhTop + '%';
+  const eTop = S.rhTop / 100 * esPa(M.D.TeH);
+  $('rhTopHelp').textContent = 'Surrounding air at ' + fmtFt(S.cliff) + ' ft, dew point ' + Math.round(dewPointF(eTop)) + '°F. It holds ' + (M.D.rTop * 1000).toFixed(1) + ' g of vapor per kg of air; beach air holds ' + (M.D.r0 * 1000).toFixed(1) + ' g.';
+  $('invBaseOut').textContent = fmtFt(S.invBase) + ' ft';
+  $('invStrOut').textContent = '+' + S.invStr + '°F';
+  ['invBase', 'invStr'].forEach(id => { $(id).disabled = !S.invOn; $(id + 'Ctl').classList.toggle('off', !S.invOn); });
+  $('sinkOut').textContent = S.sink.toFixed(2) + ' m/s';
+  $('sinkHelp').textContent = fpm(S.sink) + ' fpm at standard sea-level air. Use your wing’s spec sheet.';
+  airChips.forEach(b => { const p = PRESETS[b.dataset.preset]; b.setAttribute('aria-pressed', String(Object.keys(p).every(k => p[k] === S[k]))); });
+
+  renderBudget(); renderLapse(); drawLapse(); renderFog(); renderSun(); renderFeel(); renderDensityRef();
+  drawDensity(); drawWater();
+  if (tableP !== S.p) buildTable();
+  markTable();
+  [PL.D.plot, PL.W.plot].forEach(p => { p.setAttribute('aria-valuenow', S.t); p.setAttribute('aria-valuetext', S.t + '°F, density ' + dens + ' kg/m³'); });
+  save();
+}
+
+/* ---------- copy ---------- */
+function readingText(){
+  const fogFt = M.D.fogBase == null ? null : M.D.fogBase / FT;
+  return S.t + '°F, ' + S.rh + '% humidity at the beach, ' + S.rhTop + '% at cliff-top height, ' + S.p.toFixed(2) + ' inHg; wind ' + S.wind + ' kn at ' + S.ang + '°; ' + S.cliff + ' ft cliff, ' + ratio(S.slope) + ' airflow slope; lapse rate '
+    + S.lapse.toFixed(1) + '°F/1,000 ft' + (S.invOn ? ', inversion at ' + fmtFt(S.invBase) + ' ft' : '') + '; sun ' + S.sun + ' W/m². Ridge lift ' + sgn(M.wr, 2) + ' m/s, blocking '
+    + sgn(M.wm - M.wr, 2) + ', lapse rate ' + sgn(M.wA - M.wm, 2) + ', humid air ' + sgn(M.gV, 2) + ', fog ' + sgn(M.gK, 2) + ', sun ' + sgn(M.gS, 2) + ', wing sink −' + M.sinkTop.toFixed(2) + ' = net ' + sgn(M.net, 2) + ' m/s (' + sgnFpm(M.net) + ' fpm), at best. '
+    + (fogFt != null && fogFt <= S.cliff ? 'Fog forms at ' + fmtFt(fogFt) + ' ft. ' : '') + 'Density altitude at the cliff top ' + fmtFt(daFt(M.D.rhoTop)) + ' ft.';
+}
+$('copy').addEventListener('click', () => {
+  const btn = $('copy'), text = readingText(), out = $('copyFallback');
+  const done = () => { out.hidden = true; btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy this reading'; }, 1800); };
+  const fail = () => {
+    out.textContent = text; out.hidden = false;
+    try { const r = document.createRange(); r.selectNodeContents(out); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch (e) {}
+  };
+  try { navigator.clipboard.writeText(text).then(done, fail); } catch (e) { fail(); }
+});
+
+/* ---------- start ---------- */
+buildDial();
+syncInputs();
+Object.values(PL).forEach(wirePlot);
+buildBench();
+update();
+let raf = 0;
+const redraw = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { drawLapse(); drawDensity(); drawWater(); }); };
+if ('ResizeObserver' in window){
+  const ro = new ResizeObserver(redraw);
+  [LP.plot, PL.D.plot, PL.W.plot].forEach(p => ro.observe(p));
+} else addEventListener('resize', redraw);
+})();
+</script>
+
+
+</body></html>
