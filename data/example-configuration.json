@@ -1,0 +1,97 @@
+{
+  "format": "sea-cliff-flow",
+  "version": 1,
+  "name": "Foggy 600 ft sea cliff",
+  "notes": "",
+  "site": {
+    "coastFacingDeg": 270,
+    "coastLengthM": 10000
+  },
+  "wind": {
+    "speedMs": 6.17,
+    "refHeightM": 182.9,
+    "fromDeg": 280,
+    "boundaryLayerM": 600
+  },
+  "air": {
+    "pressureHpa": 1013.25,
+    "surfaceTempC": 15,
+    "surfaceRH": 90,
+    "lapseCPerKm": 9,
+    "moistureAtBasePct": 100,
+    "inversion": {
+      "on": true,
+      "baseM": 365.8,
+      "depthM": 120,
+      "warmingC": 8
+    },
+    "rhAbove": 30,
+    "lapseAboveCPerKm": 6.5
+  },
+  "sea": {
+    "surfaceTempC": 12.5,
+    "z0M": 0.0002,
+    "vaporFlux": true
+  },
+  "land": {
+    "z0M": 0.05,
+    "albedo": 0.2,
+    "bowenRatio": 1,
+    "nightCoolingWm2": 70
+  },
+  "sun": {
+    "clearSkyWm2": 350,
+    "elevationDeg": null,
+    "followClock": false,
+    "latitudeDeg": 34,
+    "dayOfYear": 196,
+    "startHour": 6.5
+  },
+  "fog": {
+    "dropletsPerCm3": 100,
+    "sigmaG": 1.34,
+    "settling": true,
+    "topCoolingWm2": 70,
+    "baseWarmingWm2": 22,
+    "kappaLw": 85,
+    "effRadiusUm": 10
+  },
+  "pilot": {
+    "minSinkMs": 1
+  },
+  "domain": {
+    "resolution": "coarse",
+    "upwindM": null,
+    "downwindM": null,
+    "topM": null
+  },
+  "slices": [
+    {
+      "id": "s1",
+      "label": "Main cliff",
+      "yM": 0,
+      "shiftM": 0,
+      "geometry": {
+        "type": "cliff",
+        "cliffHeightM": 182.9,
+        "faceAngleDeg": 70,
+        "crestRadiusM": 8,
+        "beachWidthM": 40,
+        "step": {
+          "on": false,
+          "heightM": 45.7,
+          "faceAngleDeg": 60,
+          "terraceWidthM": 90
+        },
+        "land": {
+          "riseM": 15,
+          "overM": 600
+        },
+        "points": null,
+        "shoreX": null,
+        "crestX": null
+      }
+    }
+  ],
+  "activeSlice": 0
+}
